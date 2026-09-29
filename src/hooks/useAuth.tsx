@@ -1,14 +1,17 @@
 import { useState, useEffect, createContext, useContext } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import { AuthError, User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+
+type OAuthProvider = 'google' | 'facebook';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signInWithProvider: (provider: OAuthProvider) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
   loading: boolean;
 }
@@ -91,6 +94,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const signInWithProvider = async (provider: OAuthProvider) => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/`,
+          scopes: provider === 'facebook' ? 'email,public_profile' : undefined,
+        },
+      });
+
+      if (error) {
+        toast.error(error.message);
+        return { error };
+      }
+
+      return { error: null };
+    } catch (error) {
+      toast.error('An unexpected error occurred');
+      return { error: error as AuthError };
+    }
+  };
+
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -106,7 +131,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, signUp, signIn, signOut, loading }}>
+    <AuthContext.Provider value={{ user, session, signUp, signIn, signInWithProvider, signOut, loading }}>
       {children}
     </AuthContext.Provider>
   );
