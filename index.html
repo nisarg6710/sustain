@@ -3,18 +3,49 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sustain - Sustainable Marketplace with AI Pricing</title>
-    <meta name="description" content="Buy and sell sustainably with Sustain. Earn eco coins, get AI-powered pricing, and join the circular economy revolution." />
-    <meta name="author" content="Sustain" />
+    <title>Sustain — Circular commerce infrastructure for pre-owned goods</title>
+    <meta
+      name="description"
+      content="Sustain settles pre-owned inventory through audited escrow, AI-assisted valuation and a verified EcoCoin ledger. A compliant route to circular revenue."
+    />
+    <meta name="author" content="Sustain Markets Ltd." />
+    <meta name="theme-color" content="#0d3b2e" />
 
-    <meta property="og:title" content="Sustain - Sustainable Marketplace" />
-    <meta property="og:description" content="Join our sustainable marketplace. Resell items, earn eco coins, and help build a circular economy." />
+    <meta property="og:title" content="Sustain — Circular commerce infrastructure" />
+    <meta
+      property="og:description"
+      content="Escrow-protected settlement, AI-assisted valuation and item-level impact reporting for the secondary goods market."
+    />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@Lovable" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+
+    <script>
+      // Resolve the appearance before first paint so there is no flash of the
+      // wrong theme. Mirrors src/hooks/useTheme.tsx.
+      (function () {
+        try {
+          var key = "sustain-theme";
+          var colors = { light: "#f7faf8", dark: "#0c1a16", amoled: "#000000" };
+          var stored = window.localStorage.getItem(key);
+          var theme =
+            stored === "light" || stored === "dark" || stored === "amoled"
+              ? stored
+              : window.matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light";
+
+          var root = document.documentElement;
+          root.classList.remove("light", "dark", "amoled");
+          if (theme === "dark") root.classList.add("dark");
+          if (theme === "amoled") root.classList.add("dark", "amoled");
+
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute("content", colors[theme]);
+        } catch (error) {
+          /* storage unavailable — fall back to the light default */
+        }
+      })();
+    </script>
   </head>
 
   <body>

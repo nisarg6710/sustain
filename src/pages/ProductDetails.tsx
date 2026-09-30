@@ -1,23 +1,32 @@
-import { Navigation } from "@/components/Navigation";
-import { Footer } from "@/components/Footer";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Coins, Share2, Facebook, Twitter, Linkedin, Link as LinkIcon, Copy, Check, Wallet, Mail, MessageCircle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate, useParams, useSearchParams, Link } from "react-router-dom";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  ArrowLeft,
+  Check,
+  Copy,
+  Facebook,
+  Leaf,
+  Link2,
+  Linkedin,
+  Lock,
+  Mail,
+  MessageCircle,
+  Share2,
+  ShieldCheck,
+  Twitter,
+  Wallet,
+} from "lucide-react";
+
+import { AppLayout } from "@/components/AppLayout";
+import { PageLoader } from "@/components/PageLoader";
+import { EmptyState } from "@/components/EmptyState";
+import { EcoCoinAmount, ListingThumbnail, WishlistButton } from "@/components/ListingCard";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,18 +37,33 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useIsAffiliate } from "@/hooks/useIsAffiliate";
+import { useToast } from "@/hooks/use-toast";
+import { conditionVariant, formatCategory, formatCondition, formatDate } from "@/lib/format";
+import { describeEdgeFunctionError } from "@/lib/edgeFunctions";
+import { burstConfetti } from "@/lib/confetti";
+import { cn } from "@/lib/utils";
 
 interface Listing {
   id: string;
   title: string;
-  description: string;
+  description: string | null;
   category: string;
   condition: string;
   price_ecocoins: number;
-  sustainability_impact: string;
-  photos: string[];
-  created_at: string;
+  sustainability_impact: string | null;
+  photos: string[] | null;
+  created_at: string | null;
 }
 
 const ProductDetails = () => {
@@ -47,28 +71,21 @@ const ProductDetails = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const { isAffiliate } = useIsAffiliate();
   const { toast } = useToast();
+
   const [listing, setListing] = useState<Listing | null>(null);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
   const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
   const [walletBalance, setWalletBalance] = useState(0);
-  const [isAffiliate, setIsAffiliate] = useState(false);
   const [affiliateLink, setAffiliateLink] = useState("");
   const [selectedImage, setSelectedImage] = useState(0);
   const [copied, setCopied] = useState(false);
 
-  const affiliateRef = searchParams.get('ref');
+  const affiliateRef = searchParams.get("ref");
 
-  useEffect(() => {
-    fetchListing();
-    if (user) {
-      checkAffiliateStatus();
-      fetchWalletBalance();
-    }
-  }, [id, user]);
-
-  const fetchWalletBalance = async () => {
+  const fetchWalletBalance = useCallback(async () => {
     if (!user) return;
 
     const { data } = await supabase
@@ -77,64 +94,27 @@ const ProductDetails = () => {
       .eq("user_id", user.id)
       .maybeSingle();
 
-    if (data) {
-      setWalletBalance(data.balance);
-    }
-  };
+    if (data) setWalletBalance(data.balance);
+  }, [user]);
 
-  const fetchListing = async () => {
+  const fetchListing = useCallback(async () => {
     if (!id) return;
 
-    const { data, error } = await supabase
-      .from("listings")
-      .select("*")
-      .eq("id", id)
-      .maybeSingle();
+    const { data, error } = await supabase.from("listings").select("*").eq("id", id).maybeSingle();
 
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load listing",
-        variant: "destructive",
-      });
-      navigate("/marketplace");
+    if (error || !data) {
+      setListing(null);
+      setLoading(false);
       return;
     }
 
-    if (!data) {
-      toast({
-        title: "Not Found",
-        description: "This listing doesn't exist",
-        variant: "destructive",
-      });
-      navigate("/marketplace");
-      return;
-    }
-
-    setListing(data);
+    setListing(data as Listing);
     setLoading(false);
-  };
+  }, [id]);
 
-  const checkAffiliateStatus = async () => {
-    if (!user) return;
-
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("role", "affiliate")
-      .maybeSingle();
-
-    if (data) {
-      setIsAffiliate(true);
-      await generateAffiliateLink();
-    }
-  };
-
-  const generateAffiliateLink = async () => {
+  const generateAffiliateLink = useCallback(async () => {
     if (!user || !id) return;
 
-    // Check if link already exists
     const { data: existing } = await supabase
       .from("affiliate_links")
       .select("link_code")
@@ -147,52 +127,47 @@ const ProductDetails = () => {
       return;
     }
 
-    // Create new affiliate link
     const linkCode = `${user.id.substring(0, 8)}-${id.substring(0, 8)}`;
     const { error } = await supabase
       .from("affiliate_links")
-      .insert({
-        affiliate_user_id: user.id,
-        listing_id: id,
-        link_code: linkCode,
-      });
+      .insert({ affiliate_user_id: user.id, listing_id: id, link_code: linkCode });
 
     if (!error) {
       setAffiliateLink(`${window.location.origin}/product/${id}?ref=${linkCode}`);
     }
-  };
+  }, [user, id]);
+
+  useEffect(() => {
+    fetchListing();
+  }, [fetchListing]);
+
+  useEffect(() => {
+    fetchWalletBalance();
+  }, [fetchWalletBalance]);
+
+  useEffect(() => {
+    if (user && isAffiliate) {
+      generateAffiliateLink();
+    }
+  }, [user, isAffiliate, generateAffiliateLink]);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopied(true);
-    toast({
-      title: "Copied!",
-      description: "Link copied to clipboard",
-    });
+    toast({ title: "Link copied", description: "The link is on your clipboard." });
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleNativeShare = async () => {
     const url = affiliateLink || window.location.href;
-    const text = `Check out this amazing item: ${listing?.title}\n\nPrice: ${listing?.price_ecocoins} EcoCoins\n\n`;
+    const text = `${listing?.title} — ${listing?.price_ecocoins} EcoCoins on Sustain`;
 
-    // Check if native share is available (mobile)
     if (navigator.share) {
       try {
-        await navigator.share({
-          title: listing?.title || 'Product',
-          text: text,
-          url: url,
-        });
-        
-        toast({
-          title: "Shared!",
-          description: "Thanks for sharing",
-        });
+        await navigator.share({ title: listing?.title || "Listing", text, url });
       } catch (error) {
-        // User cancelled or error occurred
-        if (error instanceof Error && error.name !== 'AbortError') {
-          console.error('Error sharing:', error);
+        if (error instanceof Error && error.name !== "AbortError") {
+          console.error("Error sharing:", error);
         }
       }
     }
@@ -202,49 +177,34 @@ const ProductDetails = () => {
     const url = affiliateLink || window.location.href;
     const text = `Check out this item: ${listing?.title}`;
 
-    let shareUrl = "";
-    switch (platform) {
-      case "facebook":
-        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
-        break;
-      case "twitter":
-        shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
-        break;
-      case "linkedin":
-        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
-        break;
-      case "whatsapp":
-        shareUrl = `https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`;
-        break;
-      case "email":
-        shareUrl = `mailto:?subject=${encodeURIComponent(listing?.title || 'Check this out')}&body=${encodeURIComponent(text + '\n\n' + url)}`;
-        break;
-    }
+    const shareUrls: Record<string, string> = {
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
+      twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`,
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
+      whatsapp: `https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`,
+      email: `mailto:?subject=${encodeURIComponent(listing?.title || "Check this out")}&body=${encodeURIComponent(`${text}\n\n${url}`)}`,
+    };
 
-    if (shareUrl) {
-      if (platform === "email") {
-        window.location.href = shareUrl;
-      } else {
-        window.open(shareUrl, "_blank", "width=600,height=400");
-      }
+    const shareUrl = shareUrls[platform];
+    if (!shareUrl) return;
+
+    if (platform === "email") {
+      window.location.href = shareUrl;
+    } else {
+      window.open(shareUrl, "_blank", "width=600,height=400");
     }
   };
 
-  const handlePurchase = async () => {
+  const handlePurchase = () => {
     if (!user) {
-      toast({
-        title: "Sign In Required",
-        description: "Please sign in to make a purchase",
-        variant: "destructive",
-      });
       navigate("/auth");
       return;
     }
 
-    if (walletBalance < listing!.price_ecocoins) {
+    if (listing && walletBalance < listing.price_ecocoins) {
       toast({
-        title: "Insufficient Balance",
-        description: "You don't have enough EcoCoins",
+        title: "Insufficient balance",
+        description: "Your wallet holds fewer EcoCoins than this listing requires.",
         variant: "destructive",
       });
       return;
@@ -257,16 +217,14 @@ const ProductDetails = () => {
     setPurchasing(true);
 
     const { data, error } = await supabase.functions.invoke("process-purchase", {
-      body: {
-        listingId: id,
-        affiliateLinkCode: affiliateRef,
-      },
+      body: { listingId: id, affiliateLinkCode: affiliateRef },
     });
 
     if (error || data?.error) {
+      console.error("process-purchase invoke failed:", error);
       toast({
-        title: "Purchase Failed",
-        description: data?.error || "Failed to complete purchase",
+        title: "Purchase unavailable",
+        description: data?.error || (await describeEdgeFunctionError(error, "checkout")),
         variant: "destructive",
       });
       setPurchasing(false);
@@ -274,10 +232,8 @@ const ProductDetails = () => {
       return;
     }
 
-    toast({
-      title: "Purchase Successful!",
-      description: "Your order has been placed successfully",
-    });
+    toast({ title: "Order placed", description: "The seller has been notified to dispatch." });
+    burstConfetti({ count: 120, origin: { x: window.innerWidth / 2, y: window.innerHeight * 0.4 } });
 
     setPurchasing(false);
     setShowPurchaseDialog(false);
@@ -286,261 +242,340 @@ const ProductDetails = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navigation />
-        <div className="container mx-auto px-4 py-24 text-center">
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-        <Footer />
-      </div>
+      <AppLayout>
+        <PageLoader label="Loading listing" />
+      </AppLayout>
     );
   }
 
-  if (!listing) return null;
+  if (!listing) {
+    return (
+      <AppLayout>
+        <EmptyState
+          icon={ArrowLeft}
+          title="Listing unavailable"
+          description="This listing may have been sold, withdrawn or removed by the seller."
+          action={<Button onClick={() => navigate("/marketplace")}>Back to marketplace</Button>}
+        />
+      </AppLayout>
+    );
+  }
+
+  const photos = listing.photos ?? [];
+  const balanceAfterPurchase = walletBalance - listing.price_ecocoins;
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      <main className="container mx-auto px-4 py-12">
-        <div className="grid gap-8 lg:grid-cols-2">
-          {/* Image Gallery */}
-          <div className="space-y-4">
-            <div className="aspect-square overflow-hidden rounded-lg border bg-muted">
-              {listing.photos && listing.photos.length > 0 ? (
+    <AppLayout contained={false}>
+      <div className="border-b border-border bg-card">
+        <div className="container py-4">
+          <Button asChild variant="ghost" size="xs" className="-ml-2 text-muted-foreground">
+            <Link to="/marketplace">
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Back to marketplace
+            </Link>
+          </Button>
+        </div>
+      </div>
+
+      <div className="container grid gap-10 py-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-14">
+        <div>
+          <div className="overflow-hidden rounded-lg border border-border bg-secondary">
+            <div className="aspect-square w-full">
+              {photos.length > 0 ? (
                 <img
-                  src={listing.photos[selectedImage]}
+                  src={photos[selectedImage]}
                   alt={listing.title}
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <div className="flex h-full items-center justify-center text-muted-foreground">
-                  No image available
-                </div>
+                <ListingThumbnail photo={null} title={listing.title} className="h-full w-full" />
               )}
             </div>
-            {listing.photos && listing.photos.length > 1 && (
-              <div className="grid grid-cols-4 gap-2">
-                {listing.photos.map((photo, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setSelectedImage(index)}
-                    className={`aspect-square overflow-hidden rounded-lg border-2 ${
-                      selectedImage === index ? "border-primary" : "border-border"
-                    }`}
-                  >
-                    <img src={photo} alt={`${listing.title} ${index + 1}`} className="h-full w-full object-cover" />
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
-          {/* Product Info */}
-          <div className="space-y-6">
-            {/* Affiliate Status Badge */}
-            {isAffiliate && (
-              <Card className="border-green-500 bg-green-50 dark:bg-green-950">
-                <CardContent className="pt-4 pb-4">
-                  <div className="flex items-center gap-2">
-                    <Badge className="bg-green-600 hover:bg-green-700">Affiliate Mode</Badge>
-                    <span className="text-sm text-green-700 dark:text-green-300">
-                      Share this product to earn 10% commission!
-                    </span>
+          {photos.length > 1 && (
+            <div className="mt-4 grid grid-cols-5 gap-3">
+              {photos.map((photo, index) => (
+                <button
+                  key={`${photo}-${index}`}
+                  type="button"
+                  onClick={() => setSelectedImage(index)}
+                  aria-label={`View image ${index + 1}`}
+                  aria-current={selectedImage === index}
+                  className={cn(
+                    "aspect-square overflow-hidden rounded-md border-2 transition-colors",
+                    selectedImage === index ? "border-primary" : "border-border hover:border-primary/40",
+                  )}
+                >
+                  <img src={photo} alt="" className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+
+          <Tabs defaultValue="description" className="mt-10">
+            <TabsList>
+              <TabsTrigger value="description">Description</TabsTrigger>
+              <TabsTrigger value="specification">Specification</TabsTrigger>
+              <TabsTrigger value="fulfilment">Fulfilment</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="description" className="pt-6">
+              <p className="max-w-2xl text-[15px] leading-relaxed text-muted-foreground">
+                {listing.description || "The seller has not provided a description for this item."}
+              </p>
+            </TabsContent>
+
+            <TabsContent value="specification" className="pt-6">
+              <dl className="max-w-2xl divide-y divide-border border-y border-border">
+                {[
+                  ["Reference", listing.id.slice(0, 8).toUpperCase()],
+                  ["Category", formatCategory(listing.category)],
+                  ["Condition", formatCondition(listing.condition)],
+                  ["Published", formatDate(listing.created_at)],
+                  ["Settlement currency", "EcoCoin (EC)"],
+                ].map(([label, value]) => (
+                  <div key={label} className="flex items-center justify-between gap-6 py-3">
+                    <dt className="text-sm text-muted-foreground">{label}</dt>
+                    <dd className="text-sm font-medium text-foreground">{value}</dd>
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                ))}
+              </dl>
+            </TabsContent>
 
-            <div>
-              <h1 className="mb-2 text-4xl font-bold text-foreground">{listing.title}</h1>
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary">{listing.category}</Badge>
-                <Badge variant="outline">{listing.condition}</Badge>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Coins className="h-6 w-6 text-primary" />
-              <span className="text-3xl font-bold text-foreground">{listing.price_ecocoins}</span>
-              <span className="text-xl text-muted-foreground">EcoCoins</span>
-            </div>
-
-            <div>
-              <h3 className="mb-2 font-semibold text-foreground">Description</h3>
-              <p className="text-muted-foreground">{listing.description}</p>
-            </div>
-
-            {listing.sustainability_impact && (
-              <Card className="border-primary/20 bg-primary/5">
-                <CardContent className="pt-6">
-                  <h3 className="mb-2 font-semibold text-foreground">Sustainability Impact</h3>
-                  <p className="text-sm text-muted-foreground">{listing.sustainability_impact}</p>
-                </CardContent>
-              </Card>
-            )}
-
-            <div className="space-y-3">
-              {/* Wallet Balance Display */}
-              {user && (
-                <Card className="border-muted">
-                  <CardContent className="pt-4 pb-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Your Balance:</span>
-                      <div className="flex items-center gap-2">
-                        <Wallet className="h-4 w-4 text-primary" />
-                        <span className="font-semibold text-foreground">{walletBalance} EC</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              <Button size="lg" className="w-full" onClick={handlePurchase}>
-                <Coins className="mr-2 h-5 w-5" />
-                Buy Now
-              </Button>
-
-              {/* Purchase Confirmation Dialog */}
-              <AlertDialog open={showPurchaseDialog} onOpenChange={setShowPurchaseDialog}>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Confirm Purchase</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      You are about to purchase <strong>{listing.title}</strong> for{" "}
-                      <strong>{listing.price_ecocoins} EcoCoins</strong>.
-                      <br />
-                      <br />
-                      Your new balance will be: <strong>{walletBalance - listing.price_ecocoins} EC</strong>
-                      <br />
-                      <br />
-                      The coins will be held in escrow until you confirm delivery.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel disabled={purchasing}>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={confirmPurchase} disabled={purchasing}>
-                      {purchasing ? "Processing..." : "Confirm Purchase"}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-
-              {/* Social Sharing - Native on Mobile, Detailed on Desktop */}
-              {typeof navigator !== 'undefined' && navigator.share ? (
-                // Mobile: Use native share sheet
-                <Button variant="outline" size="lg" className="w-full" onClick={handleNativeShare}>
-                  <Share2 className="mr-2 h-5 w-5" />
-                  Share Product
-                </Button>
-              ) : (
-                // Desktop: Use detailed dialog
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="lg" className="w-full">
-                      <Share2 className="mr-2 h-5 w-5" />
-                      Share Product
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Share this product</DialogTitle>
-                      <DialogDescription>
-                        {isAffiliate 
-                          ? "Share your affiliate link to earn commissions!"
-                          : "Share on social media or copy the link"
-                        }
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      {/* Social Media Buttons */}
-                      <div>
-                        <p className="mb-2 text-sm font-medium text-foreground">Share on Social Media</p>
-                        <div className="grid grid-cols-2 gap-2">
-                          <Button variant="outline" onClick={() => shareOnSocial("facebook")}>
-                            <Facebook className="mr-2 h-4 w-4" />
-                            Facebook
-                          </Button>
-                          <Button variant="outline" onClick={() => shareOnSocial("twitter")}>
-                            <Twitter className="mr-2 h-4 w-4" />
-                            Twitter
-                          </Button>
-                          <Button variant="outline" onClick={() => shareOnSocial("linkedin")}>
-                            <Linkedin className="mr-2 h-4 w-4" />
-                            LinkedIn
-                          </Button>
-                          <Button variant="outline" onClick={() => shareOnSocial("whatsapp")}>
-                            <MessageCircle className="mr-2 h-4 w-4" />
-                            WhatsApp
-                          </Button>
-                        </div>
-                      </div>
-
-                      <Separator />
-
-                      {/* Email Share */}
-                      <Button variant="outline" className="w-full" onClick={() => shareOnSocial("email")}>
-                        <Mail className="mr-2 h-4 w-4" />
-                        Share via Email
-                      </Button>
-
-                      <Separator />
-
-                      {/* Copy Link */}
-                      <div>
-                        <p className="mb-2 text-sm font-medium text-foreground">
-                          {isAffiliate ? "Your Affiliate Link" : "Product Link"}
-                        </p>
-                        <div className="flex gap-2">
-                          <Input 
-                            value={affiliateLink || window.location.href} 
-                            readOnly 
-                            className="text-sm"
-                          />
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => copyToClipboard(affiliateLink || window.location.href)}
-                          >
-                            {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                          </Button>
-                        </div>
-                        {isAffiliate && (
-                          <p className="mt-2 text-xs text-muted-foreground">
-                            Earn 10% commission when someone buys through your link!
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              )}
-
-              {/* Affiliate Link for Affiliates */}
-              {isAffiliate && affiliateLink && (
-                <Card className="border-primary">
-                  <CardContent className="pt-6">
-                    <h3 className="mb-3 flex items-center gap-2 font-semibold text-foreground">
-                      <LinkIcon className="h-5 w-5 text-primary" />
-                      Your Affiliate Link
-                    </h3>
-                    <div className="flex gap-2">
-                      <Input value={affiliateLink} readOnly className="text-sm" />
-                      <Button variant="outline" size="icon" onClick={() => copyToClipboard(affiliateLink)}>
-                        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      Share this link and earn 10% commission on every sale!
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          </div>
+            <TabsContent value="fulfilment" className="pt-6">
+              <ul className="max-w-2xl space-y-3 text-sm text-muted-foreground">
+                <li className="flex items-start gap-3">
+                  <Lock className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  EcoCoins are held in escrow by Sustain and released to the seller only after you confirm delivery.
+                </li>
+                <li className="flex items-start gap-3">
+                  <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  If the item is materially different to the description, you can raise a dispute from your order
+                  history and funds remain locked while it is reviewed.
+                </li>
+                <li className="flex items-start gap-3">
+                  <Leaf className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  Purchasing pre-owned avoids the manufacturing impact of an equivalent new unit.
+                </li>
+              </ul>
+            </TabsContent>
+          </Tabs>
         </div>
-      </main>
-      <Footer />
-    </div>
+
+        <div className="lg:sticky lg:top-28 lg:self-start">
+          {isAffiliate && (
+            <div className="mb-6 flex items-start gap-3 rounded-lg border border-success/30 bg-success/5 p-4">
+              <Badge variant="success">Affiliate</Badge>
+              <p className="text-sm leading-relaxed text-foreground">
+                Share this listing to earn a 10% commission on any completed sale.
+              </p>
+            </div>
+          )}
+
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            {formatCategory(listing.category)}
+          </p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">{listing.title}</h1>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <Badge variant={conditionVariant[listing.condition] ?? "secondary"}>
+              Condition: {formatCondition(listing.condition)}
+            </Badge>
+            <Badge variant="outline">Listed {formatDate(listing.created_at)}</Badge>
+          </div>
+
+          <Separator className="my-6" />
+
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Asking price</p>
+              <EcoCoinAmount value={listing.price_ecocoins} size="lg" className="mt-1" />
+            </div>
+            {user && (
+              <div className="text-right">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Wallet balance
+                </p>
+                <p className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium tabular-nums text-foreground">
+                  <Wallet className="h-4 w-4 text-primary" />
+                  {walletBalance} EC
+                </p>
+              </div>
+            )}
+          </div>
+
+          {listing.sustainability_impact && (
+            <div className="mt-6 rounded-lg border border-border bg-secondary/40 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Sustainability impact
+              </p>
+              <p className="mt-1.5 text-sm leading-relaxed text-foreground">{listing.sustainability_impact}</p>
+            </div>
+          )}
+
+          <div className="mt-6 space-y-3">
+            <div className="flex gap-3">
+              <Button size="lg" className="flex-1" onClick={handlePurchase}>
+                {user ? "Purchase with EcoCoins" : "Sign in to purchase"}
+              </Button>
+              <WishlistButton
+                id={listing.id}
+                title={listing.title}
+                className="static h-11 w-11 shrink-0"
+              />
+            </div>
+
+            {typeof navigator !== "undefined" && navigator.share ? (
+              <Button variant="outline" size="lg" className="w-full" onClick={handleNativeShare}>
+                <Share2 className="h-4 w-4" />
+                Share listing
+              </Button>
+            ) : (
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="lg" className="w-full">
+                    <Share2 className="h-4 w-4" />
+                    Share listing
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Share this listing</DialogTitle>
+                    <DialogDescription>
+                      {isAffiliate
+                        ? "Your affiliate link is attached — commission is credited automatically."
+                        : "Share on social media or copy the direct link."}
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button variant="outline" onClick={() => shareOnSocial("linkedin")}>
+                      <Linkedin className="h-4 w-4" />
+                      LinkedIn
+                    </Button>
+                    <Button variant="outline" onClick={() => shareOnSocial("twitter")}>
+                      <Twitter className="h-4 w-4" />
+                      Twitter
+                    </Button>
+                    <Button variant="outline" onClick={() => shareOnSocial("facebook")}>
+                      <Facebook className="h-4 w-4" />
+                      Facebook
+                    </Button>
+                    <Button variant="outline" onClick={() => shareOnSocial("whatsapp")}>
+                      <MessageCircle className="h-4 w-4" />
+                      WhatsApp
+                    </Button>
+                  </div>
+
+                  <Separator />
+
+                  <Button variant="outline" className="w-full" onClick={() => shareOnSocial("email")}>
+                    <Mail className="h-4 w-4" />
+                    Share via email
+                  </Button>
+
+                  <Separator />
+
+                  <div className="space-y-2">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      {isAffiliate ? "Affiliate link" : "Direct link"}
+                    </p>
+                    <div className="flex gap-2">
+                      <Input readOnly value={affiliateLink || window.location.href} className="text-xs" />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => copyToClipboard(affiliateLink || window.location.href)}
+                        aria-label="Copy link"
+                      >
+                        {copied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
+
+          {isAffiliate && affiliateLink && (
+            <Card className="mt-6">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-sm">
+                  <Link2 className="h-4 w-4 text-primary" />
+                  Your affiliate link
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-2">
+                  <Input readOnly value={affiliateLink} className="text-xs" />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => copyToClipboard(affiliateLink)}
+                    aria-label="Copy affiliate link"
+                  >
+                    {copied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Commission is credited to your wallet when a buyer completes delivery confirmation.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card className="mt-6 bg-secondary/40">
+            <CardContent className="p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Buyer protection
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                Funds are held in escrow until you confirm delivery. Disputes are reviewed by the Sustain operations
+                team and settlement is paused while a claim is open.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <AlertDialog open={showPurchaseDialog} onOpenChange={setShowPurchaseDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm purchase</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm text-muted-foreground">
+                <p>
+                  You are purchasing <span className="font-medium text-foreground">{listing.title}</span> for{" "}
+                  <span className="font-medium text-foreground">{listing.price_ecocoins} EcoCoins</span>.
+                </p>
+                <dl className="divide-y divide-border rounded-md border border-border">
+                  <div className="flex items-center justify-between px-3 py-2">
+                    <dt>Current balance</dt>
+                    <dd className="tabular-nums">{walletBalance} EC</dd>
+                  </div>
+                  <div className="flex items-center justify-between px-3 py-2">
+                    <dt>Item price</dt>
+                    <dd className="tabular-nums">−{listing.price_ecocoins} EC</dd>
+                  </div>
+                  <div className="flex items-center justify-between px-3 py-2">
+                    <dt className="font-medium text-foreground">Balance after purchase</dt>
+                    <dd className="font-medium tabular-nums text-foreground">{balanceAfterPurchase} EC</dd>
+                  </div>
+                </dl>
+                <p>EcoCoins are held in escrow until you confirm delivery of the item.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={purchasing}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmPurchase} disabled={purchasing}>
+              {purchasing ? "Processing…" : "Confirm purchase"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </AppLayout>
   );
 };
 

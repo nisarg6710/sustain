@@ -1,230 +1,254 @@
-import { Navigation } from "@/components/Navigation";
-import { Footer } from "@/components/Footer";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { HelpCircle } from "lucide-react";
+import { AppLayout } from "@/components/AppLayout";
+import { PageHeader } from "@/components/PageHeader";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { LifeBuoy, Mail } from "lucide-react";
 
 const faqCategories = [
   {
-    category: "Getting Started",
+    id: "getting-started",
+    label: "Getting started",
     questions: [
       {
         question: "What is Sustain?",
-        answer: "Sustain is a sustainable marketplace where you can buy and sell pre-owned items using our eco coins currency. Our AI-powered platform helps price items fairly, reduces waste, and builds a circular economy."
+        answer:
+          "Sustain is a marketplace for pre-owned goods. Sellers list items, buyers purchase with EcoCoins, and the platform holds funds in escrow until delivery is confirmed. Listings carry structured product data and an environmental impact estimate.",
       },
       {
-        question: "How do I create an account?",
-        answer: "Click 'Sign In' in the navigation menu, then select 'Sign Up'. Enter your email and create a password. You'll receive a verification email to activate your account."
+        question: "How do I open an account?",
+        answer:
+          "Select Sign in in the header and choose Create account, or continue with Google or Facebook. You will be asked to verify your email address and complete identity verification before your first withdrawal.",
       },
       {
-        question: "Is Sustain free to use?",
-        answer: "Yes! Creating an account and browsing listings is completely free. We only charge a small transaction fee when items are sold, which helps maintain the platform."
-      }
-    ]
+        question: "What does it cost?",
+        answer:
+          "Opening an account and publishing listings is free. A transaction fee is applied when an item sells. There is no monthly subscription.",
+      },
+    ],
   },
   {
-    category: "Eco Coins",
+    id: "eco-coins",
+    label: "EcoCoins",
     questions: [
       {
-        question: "What are Eco Coins?",
-        answer: "Eco Coins are our platform currency that sellers earn when they sell items. You can use coins to purchase other items on the marketplace or withdraw them as cash once you reach the minimum threshold."
+        question: "What are EcoCoins?",
+        answer:
+          "EcoCoins are the platform unit of account used for pricing and settlement. They are held in your wallet, can be spent on any listing, and are recorded in an auditable ledger.",
       },
       {
-        question: "How do I earn Eco Coins?",
-        answer: "You earn coins by selling items on Sustain. The AI suggests a coin value based on your item's condition, category, and market demand. Once a buyer confirms receipt, the coins are credited to your wallet."
+        question: "How do I earn EcoCoins?",
+        answer:
+          "Completed sales credit your wallet once the buyer confirms delivery. Approved affiliates also earn a 10% commission on referred sales that settle.",
       },
       {
-        question: "Can I withdraw my Eco Coins?",
-        answer: "Yes! Once you reach the minimum withdrawal threshold, you can request a payout to your linked bank account. Withdrawals typically process within 3-5 business days."
+        question: "Can I withdraw EcoCoins?",
+        answer:
+          "Yes. Once your balance passes the minimum threshold you can request a payout to a verified account. Payouts typically clear within three to five business days.",
       },
-      {
-        question: "How do EcoCoins work?",
-        answer: "EcoCoins are our marketplace currency. You earn EcoCoins by selling items and can use them to purchase from other sellers. The coin-based economy promotes sustainable trading within our community."
-      }
-    ]
+    ],
   },
   {
-    category: "Selling Items",
+    id: "selling",
+    label: "Selling",
     questions: [
       {
         question: "How do I create a listing?",
-        answer: "Click 'Sell Now' in the navigation menu. Upload photos of your item, add a title and description, select the condition, and our AI will suggest a price. Review the suggestions and publish your listing."
+        answer:
+          "Open Create a listing, attach up to ten photos, and complete the attribute set: title, category, condition, description and fulfilment terms. Request a valuation to have a recommended EcoCoin price applied automatically.",
       },
       {
-        question: "How does AI pricing work?",
-        answer: "Our AI analyzes your photos and description to detect the category, brand, condition, and market value. It suggests both a coin price and equivalent cash value based on similar items and current demand."
+        question: "How does valuation work?",
+        answer:
+          "The valuation service reads your photos and attributes, then returns a recommended price in EcoCoins together with the reasoning and an estimated carbon and waste impact. You can accept or override the recommendation.",
       },
       {
-        question: "How many photos can I upload?",
-        answer: "You can upload up to 10 photos per listing. We recommend using clear, well-lit photos from multiple angles to help buyers make informed decisions."
+        question: "What cannot be listed?",
+        answer:
+          "Illegal items, weapons, hazardous materials, counterfeit goods, recalled products and anything that breaches our marketplace rules are prohibited. Valuations on flagged items are rejected automatically.",
       },
-      {
-        question: "What items are prohibited?",
-        answer: "We don't allow illegal items, weapons, hazardous materials, counterfeit goods, or items that violate our sustainability mission. Our AI flags potentially prohibited items during listing creation."
-      }
-    ]
+    ],
   },
   {
-    category: "Buying Items",
+    id: "buying",
+    label: "Buying",
     questions: [
       {
         question: "How do I purchase an item?",
-        answer: "Browse the marketplace, click on an item you're interested in, and click 'Buy Now'. You can pay with eco coins from your wallet or use a credit/debit card."
+        answer:
+          "Open a listing and select Purchase with EcoCoins. Your wallet balance is checked, funds move into escrow, and the seller is notified to dispatch.",
       },
       {
-        question: "Is my purchase protected?",
-        answer: "Yes! All payments go into escrow until you confirm receipt of the item. If there's an issue, you can open a dispute and our support team will help resolve it."
+        question: "Is my payment protected?",
+        answer:
+          "Yes. Funds are held in escrow and only released to the seller after you confirm delivery. If the item is materially different from the listing, raise a dispute from your order history and settlement is paused during review.",
       },
       {
-        question: "What if the item isn't as described?",
-        answer: "Contact the seller first to resolve the issue. If that doesn't work, open a dispute through your purchase history. You may be eligible for a refund based on our buyer protection policy."
+        question: "What are the return terms?",
+        answer:
+          "Return windows are set by the seller on each listing and range from no returns up to 30 days. The applicable policy is shown on the listing before you commit.",
       },
-      {
-        question: "Can I return an item?",
-        answer: "Return policies vary by seller. Check the listing details before purchasing. Some sellers offer 7, 14, or 30-day returns, while others don't accept returns."
-      }
-    ]
+    ],
   },
   {
-    category: "Shipping and Delivery",
+    id: "shipping",
+    label: "Shipping",
     questions: [
       {
-        question: "How does shipping work?",
-        answer: "After purchase, the seller receives your shipping details. They mark the item as shipped and provide tracking information. You'll receive notifications as the package moves."
+        question: "How is shipping handled?",
+        answer:
+          "The seller selects the fulfilment method on the listing. Once an order is placed they record the carrier and tracking reference, which appears in your order history.",
       },
       {
         question: "Who pays for shipping?",
-        answer: "Shipping costs are set by the seller and included in the item price. Some sellers offer free shipping, while others charge based on the carrier and delivery speed."
+        answer:
+          "Shipping is agreed between the parties. Where collection is offered, large items can be collected locally, which reduces both cost and carbon impact.",
       },
       {
-        question: "What if my item doesn't arrive?",
-        answer: "First, check the tracking information. If the item is lost or significantly delayed, contact the seller. You can also open a dispute, and we'll investigate and help resolve the issue."
+        question: "What if my order does not arrive?",
+        answer:
+          "Check the tracking reference first. If the parcel is lost or materially delayed, contact the seller and then raise a dispute. Escrow remains locked while the claim is open.",
       },
-      {
-        question: "Can I arrange local pickup?",
-        answer: "Yes! Some sellers offer local pickup as an option. This is great for larger items and helps reduce shipping costs and environmental impact."
-      }
-    ]
+    ],
   },
   {
-    category: "Account & Security",
+    id: "account",
+    label: "Account & security",
     questions: [
       {
-        question: "How do I update my profile?",
-        answer: "Go to your account settings to update your name, address, payment methods, and notification preferences. Keep your information current for smooth transactions."
-      },
-      {
-        question: "Is my payment information secure?",
-        answer: "Absolutely. We use industry-standard encryption and never store full credit card details. All payment processing is handled by certified payment providers."
+        question: "How is my data protected?",
+        answer:
+          "Credentials are handled by our identity provider and never stored by Sustain. Payment data is tokenised by our payment partners, and all access to operational data is role-based and logged.",
       },
       {
         question: "How do I reset my password?",
-        answer: "Click 'Forgot Password' on the sign-in page. Enter your email address, and we'll send you a secure link to reset your password."
+        answer:
+          "Use the Forgot password link on the sign-in panel. A single-use reset link will be emailed to the address on your account.",
       },
       {
-        question: "Can I delete my account?",
-        answer: "Yes, you can request account deletion in your settings. Please withdraw any remaining eco coins and complete pending transactions before deleting your account."
-      }
-    ]
+        question: "Can I close my account?",
+        answer:
+          "Yes. Withdraw any remaining balance and allow open orders to settle before requesting closure, as unsettled escrow cannot be released once an account is closed.",
+      },
+    ],
   },
   {
-    category: "Sustainability",
+    id: "sustainability",
+    label: "Sustainability",
     questions: [
       {
-        question: "How does Sustain help the environment?",
-        answer: "By facilitating the resale of pre-owned items, we extend product lifecycles, reduce waste, and decrease demand for new manufacturing. Every item sold saves resources and reduces carbon emissions."
+        question: "How is impact calculated?",
+        answer:
+          "Each listing records an estimated carbon offset and waste diversion figure based on the avoided manufacture of an equivalent new unit. These roll up into seller, category and platform reporting.",
       },
       {
         question: "What is the circular economy?",
-        answer: "A circular economy keeps products and materials in use for as long as possible through reuse, repair, and recycling. Sustain is built on these principles to create a more sustainable future."
+        answer:
+          "A circular economy keeps products and materials in use for as long as possible through reuse, repair and resale. Sustain provides the settlement layer that makes secondary trade commercially viable.",
       },
       {
-        question: "Do you offer carbon-neutral shipping?",
-        answer: "We partner with carriers that offer carbon offset programs. Look for the 'eco shipping' badge on listings to support carbon-neutral delivery options."
-      }
-    ]
-  }
+        question: "Can I get impact reporting for my business?",
+        answer:
+          "Yes. Sellers can export recirculation volumes, avoided emissions and settlement values by period. Contact the partnerships team for scheduled reporting.",
+      },
+    ],
+  },
 ];
 
-const FAQ = () => {
-  return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      
-      <main className="container mx-auto px-4 py-16">
-        <div className="mb-12 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <HelpCircle className="h-8 w-8 text-primary" />
-          </div>
-          <h1 className="mb-4 text-4xl font-bold text-foreground md:text-5xl">
-            Frequently Asked Questions
-          </h1>
-          <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-            Everything you need to know about buying, selling, and earning eco coins on Sustain
-          </p>
-        </div>
-
-        <div className="mx-auto max-w-4xl space-y-8">
-          {faqCategories.map((category, categoryIndex) => (
-            <Card key={categoryIndex}>
-              <CardHeader>
-                <CardTitle className="text-2xl">{category.category}</CardTitle>
-                <CardDescription>
-                  Common questions about {category.category.toLowerCase()}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Accordion type="single" collapsible className="w-full">
-                  {category.questions.map((item, index) => (
-                    <AccordionItem key={index} value={`item-${categoryIndex}-${index}`}>
-                      <AccordionTrigger className="text-left">
-                        {item.question}
-                      </AccordionTrigger>
-                      <AccordionContent className="text-muted-foreground">
-                        {item.answer}
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-              </CardContent>
-            </Card>
+const FAQ = () => (
+  <AppLayout contained={false}>
+    <PageHeader
+      eyebrow="Support"
+      title="Help centre"
+      description="Answers on account management, settlement, listing standards and environmental reporting."
+      breadcrumbs={[{ label: "Home", to: "/" }, { label: "Help centre" }]}
+      meta={
+        <div className="flex flex-wrap gap-2">
+          {faqCategories.map((category) => (
+            <a key={category.id} href={`#${category.id}`}>
+              <Badge variant="outline" className="transition-colors hover:border-primary/40 hover:text-primary">
+                {category.label}
+              </Badge>
+            </a>
           ))}
         </div>
+      }
+    />
 
-        <div className="mt-16 text-center">
-          <Card className="mx-auto max-w-2xl border-primary/20 bg-primary/5">
-            <CardHeader>
-              <CardTitle>Still have questions?</CardTitle>
-              <CardDescription>
-                Can't find the answer you're looking for? Our support team is here to help.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="mb-4 text-muted-foreground">
-                Email us at{" "}
-                <a 
-                  href="mailto:support@sustain.eco" 
-                  className="font-medium text-primary hover:underline"
+    <div className="container grid gap-10 py-10 lg:grid-cols-[220px_minmax(0,1fr)]">
+      <nav aria-label="Sections" className="hidden lg:block">
+        <div className="sticky top-28">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Sections</p>
+          <ul className="mt-4 space-y-1.5">
+            {faqCategories.map((category) => (
+              <li key={category.id}>
+                <a
+                  href={`#${category.id}`}
+                  className="block rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                 >
-                  support@sustain.eco
+                  {category.label}
                 </a>
-              </p>
-              <p className="text-sm text-muted-foreground">
-                We typically respond within 24 hours
-              </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </nav>
+
+      <div className="space-y-6">
+        {faqCategories.map((category) => (
+          <Card key={category.id} id={category.id} className="scroll-mt-28">
+            <div className="border-b border-border px-6 py-4">
+              <h2 className="text-base font-semibold text-foreground">{category.label}</h2>
+            </div>
+            <CardContent className="p-0">
+              <Accordion type="single" collapsible className="w-full">
+                {category.questions.map((item, index) => (
+                  <AccordionItem
+                    key={item.question}
+                    value={`${category.id}-${index}`}
+                    className="px-6 first:border-t-0"
+                  >
+                    <AccordionTrigger className="text-left text-sm font-medium text-foreground">
+                      {item.question}
+                    </AccordionTrigger>
+                    <AccordionContent className="text-sm leading-relaxed text-muted-foreground">
+                      {item.answer}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
             </CardContent>
           </Card>
-        </div>
-      </main>
-      
-      <Footer />
+        ))}
+
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="flex flex-col gap-5 p-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <LifeBuoy className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+              <div>
+                <p className="text-sm font-semibold text-foreground">Still need help?</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Our operations team responds within one business day.
+                </p>
+              </div>
+            </div>
+            <Button asChild className="shrink-0">
+              <a href="mailto:support@sustain.eco">
+                <Mail className="h-4 w-4" />
+                Email support
+              </a>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     </div>
-  );
-};
+  </AppLayout>
+);
 
 export default FAQ;

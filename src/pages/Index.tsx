@@ -1,21 +1,23 @@
-import { Navigation } from "@/components/Navigation";
+import { AppLayout } from "@/components/AppLayout";
 import { Hero } from "@/components/Hero";
+import { TrustBar } from "@/components/TrustBar";
 import { Features } from "@/components/Features";
 import { HowItWorks } from "@/components/HowItWorks";
-import { Footer } from "@/components/Footer";
+import { CategoryTiles } from "@/components/CategoryTiles";
+import { Testimonials } from "@/components/Testimonials";
+import { Impact, CtaSection } from "@/components/Impact";
 
-const Index = () => {
-  return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      <main>
-        <Hero />
-        <Features />
-        <HowItWorks />
-      </main>
-      <Footer />
-    </div>
-  );
-};
+const Index = () => (
+  <AppLayout contained={false}>
+    <Hero />
+    <TrustBar />
+    <CategoryTiles />
+    <Features />
+    <HowItWorks />
+    <Impact />
+    <Testimonials />
+    <CtaSection />
+  </AppLayout>
+);
 
 export default Index;

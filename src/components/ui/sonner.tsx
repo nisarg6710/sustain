@@ -1,14 +1,17 @@
-import { useTheme } from "next-themes";
 import { Toaster as Sonner, toast } from "sonner";
+
+import { useTheme } from "@/hooks/useTheme";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme();
+  const { theme } = useTheme();
 
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      // Sonner only understands light/dark, so AMOLED maps onto its dark skin
+      // while the token-driven class names below handle the exact colours.
+      theme={theme === "light" ? "light" : "dark"}
       className="toaster group"
       toastOptions={{
         classNames: {

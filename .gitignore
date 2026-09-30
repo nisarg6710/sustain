@@ -29,6 +29,11 @@ modification.md
 supa.md
 tp.md
 
+# Local session change log. The bracket matches both casings: gitignore
+# patterns are case-sensitive, so a plain `changes.md` would stop matching
+# if the file were ever committed from a case-sensitive filesystem.
+[Cc]hanges.md
+
 # Supabase CLI local state (linked project ref, caches)
 supabase/.temp
 supabase/.branches

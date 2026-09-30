@@ -1,77 +1,73 @@
 import { Camera, Coins, Package, Search } from "lucide-react";
-import stepUpload from "@/assets/step-upload.jpg";
-import stepValuation from "@/assets/step-valuation.jpg";
-import stepDiscover from "@/assets/step-discover.jpg";
-import stepShipping from "@/assets/step-shipping.jpg";
+import { Link } from "react-router-dom";
+
+import { SectionHeading } from "@/components/SectionHeading";
+import { Reveal } from "@/components/Reveal";
+import { Button } from "@/components/ui/button";
 
 const steps = [
   {
     icon: Camera,
     step: "01",
-    title: "Upload Your Item",
-    description: "Take photos and add details. Our AI will analyze and suggest pricing automatically.",
-    image: stepUpload,
+    title: "Register the item",
+    body: "Upload up to ten images and complete a short attribute set: category, condition, description and fulfilment terms.",
   },
   {
     icon: Coins,
     step: "02",
-    title: "Get AI Valuation",
-    description: "Receive instant pricing in eco coins based on condition, brand, and market demand.",
-    image: stepValuation,
+    title: "Valuation and impact",
+    body: "The valuation service returns a recommended EcoCoin price alongside the carbon and waste impact of recirculating the item.",
   },
   {
     icon: Search,
     step: "03",
-    title: "List & Get Discovered",
-    description: "Your listing goes live instantly. Buyers can find it through search and filters.",
-    image: stepDiscover,
+    title: "Publication and discovery",
+    body: "Listings publish immediately and surface through category, condition and price filters, with sustainability data attached.",
   },
   {
     icon: Package,
     step: "04",
-    title: "Ship & Earn Coins",
-    description: "Once sold, ship the item. After delivery confirmation, coins are credited to your wallet.",
-    image: stepShipping,
+    title: "Fulfilment and settlement",
+    body: "Ship with tracking. EcoCoins are credited to the seller wallet once the buyer confirms delivery and escrow releases.",
   },
 ];
 
-export const HowItWorks = () => {
-  return (
-    <section className="py-24">
-      <div className="container mx-auto px-4">
-        <div className="mb-16 text-center">
-          <h2 className="mb-4 text-4xl font-bold text-foreground md:text-5xl">
-            How It Works
-          </h2>
-          <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-            Selling sustainably has never been easier. Just four simple steps to turn your unused items into eco coins.
-          </p>
-        </div>
+export const HowItWorks = () => (
+  <section id="process" className="border-b border-border bg-secondary/30 py-20 md:py-24">
+    <div className="container">
+      <SectionHeading
+        eyebrow="Operating process"
+        title="Four steps from intake to settlement"
+        description="A single workflow shared by sellers, buyers and operations teams."
+      />
 
-        <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-4">
-          {steps.map((step, index) => (
-            <div key={index} className="relative">
-              {index < steps.length - 1 && (
-                <div className="absolute left-1/2 top-32 hidden h-0.5 w-full bg-gradient-to-r from-primary to-primary-dark lg:block"></div>
-              )}
-              
-              <div className="relative z-10 text-center">
-                <div className="mx-auto mb-6 overflow-hidden rounded-2xl shadow-lg">
-                  <img 
-                    src={step.image} 
-                    alt={step.title}
-                    className="h-48 w-full object-cover"
-                  />
-                </div>
-                
-                <div className="mb-3 text-sm font-bold text-primary">{step.step}</div>
-                <h3 className="mb-3 text-xl font-semibold text-foreground">{step.title}</h3>
-                <p className="text-muted-foreground">{step.description}</p>
-              </div>
+      <ol className="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+        {steps.map((step, index) => (
+          <Reveal key={step.step} as="li" delay={index * 80} className="relative">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-primary text-[13px] font-semibold tabular-nums text-primary-foreground">
+                {step.step}
+              </span>
+              <span className="h-px flex-1 bg-border" aria-hidden="true" />
+              <step.icon className="h-4 w-4 text-muted-foreground" />
             </div>
-          ))}
-        </div>
+            <h3 className="mt-5 text-[15px] font-semibold text-foreground">{step.title}</h3>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{step.body}</p>
+          </Reveal>
+        ))}
+      </ol>
+
+      <div className="mt-12 flex flex-wrap items-center gap-3 border-t border-border pt-8">
+        <p className="mr-auto text-sm text-muted-foreground">
+          Ready for a walkthrough of the full workflow?
+        </p>
+        <Button asChild variant="outline">
+          <Link to="/how-it-works">Read the process guide</Link>
+        </Button>
+        <Button asChild>
+          <Link to="/create-listing">List your first item</Link>
+        </Button>
       </div>
-    </section>
-  );
-};
+    </div>
+  </section>
+);

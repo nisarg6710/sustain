@@ -1,202 +1,246 @@
-import { Navigation } from "@/components/Navigation";
-import { Footer } from "@/components/Footer";
+import { useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Bot, Camera, Check, Info, Plus, Sparkles, Trash2, Upload } from "lucide-react";
+
+import { AppLayout } from "@/components/AppLayout";
+import { PageHeader } from "@/components/PageHeader";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Bot, Camera, Coins, Upload, X } from "lucide-react";
-import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { describeEdgeFunctionError } from "@/lib/edgeFunctions";
+import { burstConfetti } from "@/lib/confetti";
+import { cn } from "@/lib/utils";
+
+const MAX_PHOTOS = 10;
+
+const categoryOptions = [
+  { value: "electronics", label: "Electronics" },
+  { value: "fashion", label: "Fashion" },
+  { value: "home", label: "Home & garden" },
+  { value: "sports", label: "Sports & outdoors" },
+  { value: "books", label: "Books & media" },
+  { value: "toys", label: "Toys & games" },
+];
+
+const conditionOptions = [
+  { value: "new", label: "New" },
+  { value: "like-new", label: "Like new" },
+  { value: "good", label: "Good" },
+  { value: "fair", label: "Fair" },
+  { value: "poor", label: "Poor" },
+];
+
+interface Valuation {
+  ecoCoins?: number;
+  justification?: string;
+  carbonOffset?: number;
+  wasteReduction?: string;
+  sustainabilityImpact?: string;
+}
 
 const CreateListing = () => {
-  const [aiSuggested, setAiSuggested] = useState(false);
-  const [photos, setPhotos] = useState<string[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [analyzingAI, setAnalyzingAI] = useState(false);
-  const [valuation, setValuation] = useState<any>(null);
-  const [formData, setFormData] = useState({
-    title: '',
-    category: '',
-    condition: '',
-    description: '',
-    price: '',
-  });
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to create a listing",
-        variant: "destructive",
-      });
-      return;
-    }
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [analysing, setAnalysing] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [valuation, setValuation] = useState<Valuation | null>(null);
+  const [shipping, setShipping] = useState("seller-ships");
+  const [returns, setReturns] = useState("no-returns");
+  const [formData, setFormData] = useState({
+    title: "",
+    category: "",
+    condition: "",
+    description: "",
+    price: "",
+  });
 
-    if (photos.length === 0) {
-      toast({
-        title: "Photos Required",
-        description: "Please upload at least one photo",
-        variant: "destructive",
-      });
-      return;
-    }
+  // Only the first three stages are requirements — publishing is the action,
+  // not something the seller can tick off.
+  const requirements = [
+    { id: "media", label: "Media", done: photos.length > 0 },
+    {
+      id: "details",
+      label: "Item details",
+      done: Boolean(formData.title && formData.category && formData.condition && formData.description),
+    },
+    { id: "pricing", label: "Pricing", done: Number(formData.price) > 0 },
+  ];
 
-    if (!formData.title.trim()) {
-      toast({
-        title: "Title Required",
-        description: "Please enter a title for your listing",
-        variant: "destructive",
-      });
-      return;
-    }
+  const completedCount = requirements.filter((requirement) => requirement.done).length;
+  const readyToPublish = completedCount === requirements.length;
 
-    if (!formData.category) {
-      toast({
-        title: "Category Required",
-        description: "Please select a category",
-        variant: "destructive",
-      });
-      return;
-    }
+  const stepStates = [
+    ...requirements.map((requirement, index) => ({
+      key: requirement.id,
+      label: requirement.label,
+      state: requirement.done ? "done" : completedCount === index ? "active" : "todo",
+    })),
+    { key: "publish", label: "Publish", state: readyToPublish ? "active" : "todo" },
+  ] as const;
 
-    if (!formData.condition) {
-      toast({
-        title: "Condition Required",
-        description: "Please select the item condition",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const priceValue = parseInt(formData.price || valuation?.ecoCoins || '0');
-    if (priceValue <= 0) {
-      toast({
-        title: "Price Required",
-        description: "Please set a price or use AI valuation",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Create listing in database
-    const { error: insertError } = await supabase
-      .from('listings')
-      .insert({
-        user_id: user.id,
-        title: formData.title,
-        description: formData.description || '',
-        category: formData.category,
-        condition: formData.condition,
-        price_ecocoins: priceValue,
-        sustainability_impact: valuation?.sustainabilityImpact || null,
-        photos: photos,
-        status: 'active',
-      });
-
-    if (insertError) {
-      console.error('Insert error:', insertError);
-      toast({
-        title: "Error",
-        description: insertError.message || "Failed to create listing",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    toast({
-      title: "Listing Created!",
-      description: "Your item has been listed successfully.",
-    });
-
-    // Reset form
+  const resetForm = () => {
     setPhotos([]);
-    setFormData({
-      title: '',
-      category: '',
-      condition: '',
-      description: '',
-      price: '',
-    });
+    setFormData({ title: "", category: "", condition: "", description: "", price: "" });
     setValuation(null);
-    setAiSuggested(false);
+    setShipping("seller-ships");
+    setReturns("no-returns");
   };
 
-  const handleAISuggest = async () => {
-    if (!photos.length) {
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    if (!user) {
       toast({
-        title: "No photos",
-        description: "Please upload at least one photo first",
+        title: "Sign in required",
+        description: "You need an account to publish a listing.",
+        variant: "destructive",
+      });
+      navigate("/auth");
+      return;
+    }
+
+    const priceValue = parseInt(formData.price || String(valuation?.ecoCoins ?? "0"), 10);
+
+    if (photos.length === 0) {
+      toast({ title: "Media required", description: "Add at least one photo.", variant: "destructive" });
+      return;
+    }
+    if (!formData.title.trim()) {
+      toast({ title: "Title required", description: "Enter a clear, descriptive title.", variant: "destructive" });
+      return;
+    }
+    if (!formData.category) {
+      toast({ title: "Category required", description: "Select a category.", variant: "destructive" });
+      return;
+    }
+    if (!formData.condition) {
+      toast({ title: "Condition required", description: "Select the item condition.", variant: "destructive" });
+      return;
+    }
+    if (!(priceValue > 0)) {
+      toast({
+        title: "Price required",
+        description: "Set a price in EcoCoins or request an AI valuation.",
         variant: "destructive",
       });
       return;
     }
 
+    setSubmitting(true);
+
+    const { error } = await supabase.from("listings").insert({
+      user_id: user.id,
+      title: formData.title,
+      description: formData.description,
+      category: formData.category,
+      condition: formData.condition,
+      price_ecocoins: priceValue,
+      sustainability_impact: valuation?.sustainabilityImpact ?? null,
+      photos,
+      status: "active",
+    });
+
+    setSubmitting(false);
+
+    if (error) {
+      toast({
+        title: "Could not publish listing",
+        description: error.message || "Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({ title: "Listing published", description: "Your item is now live in the marketplace." });
+    burstConfetti({ count: 110 });
+    resetForm();
+    navigate("/marketplace");
+  };
+
+  const handleValuation = async () => {
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Valuation is available to registered accounts.",
+        variant: "destructive",
+      });
+      navigate("/auth");
+      return;
+    }
+    if (photos.length === 0) {
+      toast({
+        title: "Media required",
+        description: "Upload at least one photo before requesting a valuation.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!formData.title || !formData.category || !formData.condition) {
       toast({
-        title: "Missing Information",
-        description: "Please fill in title, category, and condition before getting AI valuation",
+        title: "Incomplete details",
+        description: "Add a title, category and condition before requesting a valuation.",
         variant: "destructive",
       });
       return;
     }
 
-    setAnalyzingAI(true);
+    setAnalysing(true);
+
     try {
-      const response = await supabase.functions.invoke('ai-valuation', {
+      const { data, error } = await supabase.functions.invoke("ai-valuation", {
         body: {
           imageUrl: photos[0],
           title: formData.title,
           condition: formData.condition,
           category: formData.category,
           description: formData.description,
-        }
+        },
       });
 
-      if (response.error) {
-        throw new Error(response.error.message || 'Failed to get AI valuation');
+      if (error) {
+        console.error("ai-valuation invoke failed:", error);
+        throw new Error(await describeEdgeFunctionError(error, "valuation"));
       }
 
-      setValuation(response.data);
-      setFormData({ ...formData, price: response.data?.ecoCoins?.toString() || '' });
-      setAiSuggested(true);
+      if (!data) {
+        throw new Error("The valuation service returned an empty response. Please try again.");
+      }
+
+      setValuation(data);
+      setFormData((prev) => ({ ...prev, price: String(data?.ecoCoins ?? "") }));
+      toast({ title: "Valuation complete", description: "A recommended price has been applied." });
+    } catch (error) {
       toast({
-        title: "AI Analysis Complete",
-        description: "Product valuation has been generated",
-      });
-    } catch (error: any) {
-      console.error('AI valuation error:', error);
-      toast({
-        title: "Analysis failed",
-        description: error.message || "Failed to analyze product. Please try again.",
+        title: "Valuation unavailable",
+        description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       });
     } finally {
-      setAnalyzingAI(false);
+      setAnalysing(false);
     }
   };
 
-  const handlePhotoClick = () => {
-    fileInputRef.current?.click();
-  };
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0 || !user) return;
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || !user) return;
-
-    if (photos.length + files.length > 10) {
+    if (photos.length + files.length > MAX_PHOTOS) {
       toast({
-        title: "Too many photos",
-        description: "You can upload a maximum of 10 photos",
+        title: "Photo limit reached",
+        description: `You can attach up to ${MAX_PHOTOS} photos per listing.`,
         variant: "destructive",
       });
       return;
@@ -206,337 +250,389 @@ const CreateListing = () => {
     const uploadedUrls: string[] = [];
 
     try {
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${user.id}/${Date.now()}-${i}.${fileExt}`;
+      for (let index = 0; index < files.length; index++) {
+        const file = files[index];
+        const extension = file.name.split(".").pop();
+        const path = `${user.id}/${Date.now()}-${index}.${extension}`;
 
-        const { error: uploadError, data } = await supabase.storage
-          .from('listing-photos')
-          .upload(fileName, file);
-
+        const { error: uploadError } = await supabase.storage.from("listing-photos").upload(path, file);
         if (uploadError) throw uploadError;
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('listing-photos')
-          .getPublicUrl(fileName);
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("listing-photos").getPublicUrl(path);
 
         uploadedUrls.push(publicUrl);
       }
 
-      setPhotos([...photos, ...uploadedUrls]);
-      toast({
-        title: "Photos uploaded",
-        description: `Successfully uploaded ${uploadedUrls.length} photo(s)`,
-      });
+      setPhotos((prev) => [...prev, ...uploadedUrls]);
+      toast({ title: "Media uploaded", description: `${uploadedUrls.length} photo(s) attached.` });
     } catch (error) {
-      console.error('Error uploading photos:', error);
       toast({
         title: "Upload failed",
-        description: "Failed to upload photos. Please try again.",
+        description: "Photos could not be uploaded. Please try again.",
         variant: "destructive",
       });
     } finally {
       setUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
-  const handleRemovePhoto = (index: number) => {
-    setPhotos(photos.filter((_, i) => i !== index));
-  };
-
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="mb-2 text-4xl font-bold text-foreground">Create Listing</h1>
-          <p className="text-muted-foreground">Let AI help you create the perfect listing</p>
-        </div>
+    <AppLayout contained={false}>
+      <PageHeader
+        eyebrow="Seller workspace"
+        title="Create a listing"
+        description="Publish an item to the marketplace. The valuation service will propose a price once media and core attributes are complete."
+        breadcrumbs={[{ label: "Home", to: "/" }, { label: "Marketplace", to: "/marketplace" }, { label: "Create listing" }]}
+        meta={
+          <div className="flex flex-wrap items-center gap-2">
+            {stepStates.map((step, index) => (
+              <span
+                key={step.key}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium",
+                  step.state === "done" && "border-success/30 bg-success/10 text-success",
+                  step.state === "active" && "border-primary/30 bg-primary/5 text-primary",
+                  step.state === "todo" && "border-border text-muted-foreground",
+                )}
+              >
+                {step.state === "done" ? (
+                  <Check className="h-3 w-3" />
+                ) : (
+                  <span className="tabular-nums">{index + 1}</span>
+                )}
+                {step.label}
+              </span>
+            ))}
+          </div>
+        }
+      />
 
-        <form onSubmit={handleSubmit}>
-        <div className="grid gap-8 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Item Details</CardTitle>
-                <CardDescription>
-                  Upload photos and add information about your item
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label>Photos</Label>
-                  <div className="grid grid-cols-3 gap-4">
-                    {photos.map((photo, index) => (
-                      <div key={index} className="relative h-32">
-                        <img 
-                          src={photo} 
-                          alt={`Upload ${index + 1}`} 
-                          className="h-full w-full rounded-lg object-cover"
-                        />
-                        <Button
-                          size="icon"
-                          variant="destructive"
-                          className="absolute -right-2 -top-2 h-6 w-6"
-                          onClick={() => handleRemovePhoto(index)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                        {index === 0 && (
-                          <Badge className="absolute bottom-2 left-2 text-xs">
-                            Cover
-                          </Badge>
-                        )}
-                      </div>
-                    ))}
-                    {photos.length < 10 && (
-                      <>
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          onChange={handleFileChange}
-                          className="hidden"
-                        />
-                        <Button 
-                          type="button"
-                          variant="outline" 
-                          className="h-32 flex-col gap-2 border-dashed"
-                          onClick={handlePhotoClick}
-                          disabled={uploading || !user}
-                        >
-                          <Camera className="h-8 w-8 text-muted-foreground" />
-                          <span className="text-sm">
-                            {uploading ? "Uploading..." : "Add Photo"}
-                          </span>
-                        </Button>
-                      </>
+      <form onSubmit={handleSubmit} className="container grid gap-8 py-8 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Media</CardTitle>
+              <CardDescription>
+                Up to {MAX_PHOTOS} photos. The first image is used as the cover across the marketplace.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                {photos.map((photo, index) => (
+                  <div key={photo} className="group relative aspect-square overflow-hidden rounded-md border border-border">
+                    <img src={photo} alt={`Upload ${index + 1}`} className="h-full w-full object-cover" />
+                    {index === 0 && (
+                      <Badge className="absolute left-2 top-2" variant="outline">
+                        Cover
+                      </Badge>
                     )}
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Upload 1-10 photos. First photo will be the cover image.
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="title">Title</Label>
-                  <Input 
-                    id="title" 
-                    placeholder="e.g., Vintage Canon Camera AE-1"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  />
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Category</Label>
-                    <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
-                      <SelectTrigger id="category">
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="electronics">Electronics</SelectItem>
-                        <SelectItem value="fashion">Fashion</SelectItem>
-                        <SelectItem value="home">Home & Garden</SelectItem>
-                        <SelectItem value="sports">Sports & Outdoors</SelectItem>
-                        <SelectItem value="books">Books & Media</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="condition">Condition</Label>
-                    <Select value={formData.condition} onValueChange={(value) => setFormData({ ...formData, condition: value })}>
-                      <SelectTrigger id="condition">
-                        <SelectValue placeholder="Select condition" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="new">New</SelectItem>
-                        <SelectItem value="like-new">Like New</SelectItem>
-                        <SelectItem value="good">Good</SelectItem>
-                        <SelectItem value="fair">Fair</SelectItem>
-                        <SelectItem value="poor">Poor</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea 
-                    id="description" 
-                    placeholder="Describe your item in detail..."
-                    className="min-h-32"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  />
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="shipping">Shipping Option</Label>
-                    <Select>
-                      <SelectTrigger id="shipping">
-                        <SelectValue placeholder="Select option" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="seller-ships">Seller Ships</SelectItem>
-                        <SelectItem value="pickup">Local Pickup Only</SelectItem>
-                        <SelectItem value="both">Both Options</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="returns">Return Policy</Label>
-                    <Select>
-                      <SelectTrigger id="returns">
-                        <SelectValue placeholder="Select policy" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="no-returns">No Returns</SelectItem>
-                        <SelectItem value="7-days">7 Days</SelectItem>
-                        <SelectItem value="14-days">14 Days</SelectItem>
-                        <SelectItem value="30-days">30 Days</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="price">Price (EcoCoins)</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="price"
-                      type="number"
-                      min="1"
-                      placeholder="Enter price or use AI suggestion"
-                      value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    />
-                    <Button
+                    <button
                       type="button"
-                      variant="outline"
-                      onClick={handleAISuggest}
-                      disabled={analyzingAI || !photos.length || !user}
+                      onClick={() => setPhotos((prev) => prev.filter((_, i) => i !== index))}
+                      aria-label={`Remove photo ${index + 1}`}
+                      className="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-card/90 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100 focus-visible:opacity-100"
                     >
-                      <Bot className="h-4 w-4 mr-2" />
-                      {analyzingAI ? "Analyzing..." : "AI Price"}
-                    </Button>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
                   </div>
-                  {aiSuggested && valuation && (
-                    <p className="text-sm text-muted-foreground">
-                      AI suggested: {valuation.ecoCoins} EcoCoins
-                    </p>
-                  )}
+                ))}
+
+                {photos.length < MAX_PHOTOS && (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading || !user}
+                    className="flex aspect-square flex-col items-center justify-center gap-2 rounded-md border border-dashed border-input bg-secondary/40 text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary disabled:opacity-60"
+                  >
+                    <Camera className="h-5 w-5" />
+                    <span className="text-xs font-medium">{uploading ? "Uploading…" : "Add photo"}</span>
+                  </button>
+                )}
+              </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleFileChange}
+                className="hidden"
+              />
+
+              <p className="mt-4 flex items-start gap-2 text-xs text-muted-foreground">
+                <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                Neutral, well-lit photos on a plain background produce the most reliable valuation.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Item details</CardTitle>
+              <CardDescription>Core attributes used for categorisation, search and valuation.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="title">Title</Label>
+                <Input
+                  id="title"
+                  placeholder="e.g. Canon AE-1 35mm film camera, serviced 2024"
+                  value={formData.title}
+                  onChange={(event) => setFormData({ ...formData, title: event.target.value })}
+                />
+              </div>
+
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="category">Category</Label>
+                  <Select
+                    value={formData.category}
+                    onValueChange={(value) => setFormData({ ...formData, category: value })}
+                  >
+                    <SelectTrigger id="category">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categoryOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                <div className="flex gap-3">
-                  <Button type="submit" className="w-full" disabled={uploading}>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Publish Listing
+                <div className="space-y-2">
+                  <Label htmlFor="condition">Condition</Label>
+                  <Select
+                    value={formData.condition}
+                    onValueChange={(value) => setFormData({ ...formData, condition: value })}
+                  >
+                    <SelectTrigger id="condition">
+                      <SelectValue placeholder="Select condition" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {conditionOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Condition notes, included accessories, service history, known faults…"
+                  value={formData.description}
+                  onChange={(event) => setFormData({ ...formData, description: event.target.value })}
+                />
+                <p className="text-xs text-muted-foreground">{formData.description.length} characters</p>
+              </div>
+
+              <Separator />
+
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="shipping">Fulfilment</Label>
+                  <Select value={shipping} onValueChange={setShipping}>
+                    <SelectTrigger id="shipping">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="seller-ships">Seller ships</SelectItem>
+                      <SelectItem value="pickup">Collection only</SelectItem>
+                      <SelectItem value="both">Both offered</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="returns">Returns policy</Label>
+                  <Select value={returns} onValueChange={setReturns}>
+                    <SelectTrigger id="returns">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="no-returns">No returns</SelectItem>
+                      <SelectItem value="7-days">7 days</SelectItem>
+                      <SelectItem value="14-days">14 days</SelectItem>
+                      <SelectItem value="30-days">30 days</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Pricing</CardTitle>
+              <CardDescription>
+                Set your own price in EcoCoins, or apply the valuation service recommendation.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Label htmlFor="price">Asking price (EcoCoins)</Label>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Input
+                    id="price"
+                    type="number"
+                    min={1}
+                    placeholder="e.g. 450"
+                    value={formData.price}
+                    onChange={(event) => setFormData({ ...formData, price: event.target.value })}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleValuation}
+                    disabled={analysing || uploading || !user}
+                    className="sm:w-56"
+                  >
+                    <Bot className="h-4 w-4" />
+                    {analysing ? "Valuating…" : "Request valuation"}
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bot className="h-5 w-5 text-primary" />
-                  AI Valuation
-                </CardTitle>
-                <CardDescription>
-                  Upload photos to get instant pricing suggestions
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {!aiSuggested ? (
-                  <div className="rounded-lg border border-dashed border-border p-8 text-center">
-                    <Bot className="mx-auto mb-3 h-12 w-12 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      Upload photos and fill in details, then click "Get AI Valuation" for instant pricing and sustainability analysis
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 p-4">
-                        <div>
-                          <div className="mb-1 text-sm text-muted-foreground">Suggested Price</div>
-                          <div className="flex items-center gap-2">
-                            <Coins className="h-5 w-5 text-primary" />
-                            <span className="text-2xl font-bold text-foreground">{valuation?.ecoCoins || 450}</span>
-                          </div>
-                        </div>
-                        <Badge variant="secondary">AI Generated</Badge>
-                      </div>
-
-                      {valuation?.justification && (
-                        <div className="rounded-lg border border-border p-4">
-                          <h4 className="mb-2 font-semibold text-foreground">AI Analysis</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {valuation.justification}
-                          </p>
-                        </div>
-                      )}
-
-                      <div className="rounded-lg border border-border p-4">
-                        <h4 className="mb-2 font-semibold text-foreground">Sustainability Impact</h4>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Carbon Offset</span>
-                            <span className="font-medium text-primary">+{valuation?.carbonOffset || 12} kg CO₂</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Waste Reduction</span>
-                            <span className="font-medium text-primary">{valuation?.wasteReduction || 'High'}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <Button 
-                      variant="outline" 
-                      className="w-full"
-                      onClick={handleAISuggest}
-                      disabled={analyzingAI}
-                    >
-                      Regenerate Analysis
-                    </Button>
-                  </>
+                {valuation && (
+                  <p className="text-xs text-muted-foreground">
+                    Valuation applied: <span className="font-medium text-foreground">{valuation.ecoCoins} EC</span>
+                  </p>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </CardContent>
+          </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Tips for Better Listings</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm text-muted-foreground">
-                <p>• Use clear, well-lit photos from multiple angles</p>
-                <p>• Be honest about item condition</p>
-                <p>• Include all relevant details and measurements</p>
-                <p>• Highlight sustainable or eco-friendly features</p>
-                <p>• Respond quickly to buyer questions</p>
-              </CardContent>
-            </Card>
+          <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-medium text-foreground">
+                {completedCount} of {requirements.length} requirements complete
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {readyToPublish
+                  ? "Ready to publish. Listings go live immediately."
+                  : "Listings go live immediately once every requirement is met."}
+              </p>
+            </div>
+            <Button type="submit" disabled={submitting || uploading} className="sm:w-48">
+              <Upload className="h-4 w-4" />
+              {submitting ? "Publishing…" : "Publish listing"}
+            </Button>
           </div>
         </div>
-        </form>
-      </main>
-      
-      <Footer />
-    </div>
+
+        <div className="space-y-6 lg:sticky lg:top-28 lg:self-start">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                Valuation service
+              </CardTitle>
+              <CardDescription>
+                Returns a recommended EcoCoin price with the reasoning and impact estimate.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {!valuation ? (
+                <div className="rounded-md border border-dashed border-border p-6 text-center">
+                  <Bot className="mx-auto h-6 w-6 text-muted-foreground" />
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Add media and core details, then request a valuation to populate this panel.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="rounded-md border border-border bg-secondary/40 p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Recommended price
+                    </p>
+                    <p className="mt-1 text-3xl font-semibold tabular-nums text-foreground">
+                      {valuation.ecoCoins}
+                      <span className="ml-1.5 text-sm font-medium text-muted-foreground">EC</span>
+                    </p>
+                  </div>
+
+                  {valuation.justification && (
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Rationale
+                      </p>
+                      <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                        {valuation.justification}
+                      </p>
+                    </div>
+                  )}
+
+                  <Separator />
+
+                  <dl className="space-y-2 text-sm">
+                    <div className="flex items-center justify-between">
+                      <dt className="text-muted-foreground">Carbon offset</dt>
+                      <dd className="font-medium tabular-nums text-foreground">
+                        +{valuation.carbonOffset ?? 12} kg CO₂e
+                      </dd>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <dt className="text-muted-foreground">Waste diverted</dt>
+                      <dd className="font-medium text-foreground">{valuation.wasteReduction ?? "High"}</dd>
+                    </div>
+                  </dl>
+
+                  <Button variant="outline" className="w-full" onClick={handleValuation} disabled={analysing}>
+                    Re-run valuation
+                  </Button>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Listing standards</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2.5 text-sm text-muted-foreground">
+                {[
+                  "Photograph the item from multiple angles under neutral light.",
+                  "Disclose every functional fault and cosmetic mark.",
+                  "State service history and included accessories explicitly.",
+                  "Respond to buyer questions within 24 hours.",
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-2.5">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+
+          {!user && (
+            <Card className="border-primary/30 bg-primary/5">
+              <CardContent className="p-5">
+                <p className="text-sm font-medium text-foreground">Sign in to publish</p>
+                <p className="mt-1.5 text-sm text-muted-foreground">
+                  You can prepare a listing without an account, but publishing requires a verified profile.
+                </p>
+                <Button asChild className="mt-4 w-full">
+                  <Link to="/auth">
+                    <Plus className="h-4 w-4" />
+                    Create an account
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </form>
+    </AppLayout>
   );
 };
 

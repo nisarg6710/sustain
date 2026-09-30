@@ -1,123 +1,113 @@
-import { Facebook, Instagram, Leaf, Twitter } from "lucide-react";
 import { Link } from "react-router-dom";
-import sustainLogo from "@/assets/sustain-logo.jpg";
+import { Github, Instagram, Linkedin, Mail, Twitter } from "lucide-react";
 
-export const Footer = () => {
-  return (
-    <footer className="border-t border-border bg-muted/30">
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-          <div>
-            <Link to="/" className="mb-4 flex items-center gap-2">
-              <img 
-                src={sustainLogo} 
-                alt="Sustain Logo" 
-                className="h-10 w-10 rounded-lg object-cover"
-              />
-              <span className="text-xl font-bold text-foreground">Sustain</span>
-            </Link>
-            <p className="mb-4 text-sm text-muted-foreground">
-              Building a sustainable future, one transaction at a time.
-            </p>
-            <div className="flex gap-3">
-              <a href="#" className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted hover:bg-primary hover:text-primary-foreground transition-colors">
-                <Facebook className="h-4 w-4" />
-              </a>
-              <a href="#" className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted hover:bg-primary hover:text-primary-foreground transition-colors">
-                <Instagram className="h-4 w-4" />
-              </a>
-              <a href="#" className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted hover:bg-primary hover:text-primary-foreground transition-colors">
-                <Twitter className="h-4 w-4" />
-              </a>
-            </div>
-          </div>
+import { Brand } from "@/components/Brand";
+import { Separator } from "@/components/ui/separator";
 
-          <div>
-            <h3 className="mb-4 font-semibold text-foreground">Marketplace</h3>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <Link to="/marketplace" className="text-muted-foreground hover:text-primary transition-colors">
-                  Browse All
-                </Link>
-              </li>
-              <li>
-                <Link to="/marketplace?category=electronics" className="text-muted-foreground hover:text-primary transition-colors">
-                  Electronics
-                </Link>
-              </li>
-              <li>
-                <Link to="/marketplace?category=fashion" className="text-muted-foreground hover:text-primary transition-colors">
-                  Fashion
-                </Link>
-              </li>
-              <li>
-                <Link to="/marketplace?category=home" className="text-muted-foreground hover:text-primary transition-colors">
-                  Home & Garden
-                </Link>
-              </li>
-            </ul>
-          </div>
+const columns = [
+  {
+    title: "Marketplace",
+    links: [
+      { label: "Browse all listings", to: "/marketplace" },
+      { label: "Electronics", to: "/marketplace?category=electronics" },
+      { label: "Fashion", to: "/marketplace?category=fashion" },
+      { label: "Home & garden", to: "/marketplace?category=home" },
+      { label: "List an item", to: "/create-listing" },
+    ],
+  },
+  {
+    title: "Platform",
+    links: [
+      { label: "How it works", to: "/how-it-works" },
+      { label: "Wallet & EcoCoins", to: "/wallet" },
+      { label: "Order management", to: "/my-orders" },
+      { label: "Affiliate reporting", to: "/affiliate-dashboard" },
+    ],
+  },
+  {
+    title: "Resources",
+    links: [
+      { label: "Help centre", to: "/faq" },
+      { label: "Buying guide", to: "/faq#buying" },
+      { label: "Selling guide", to: "/faq#selling" },
+      { label: "Shipping & delivery", to: "/faq#shipping" },
+    ],
+  },
+];
 
-          <div>
-            <h3 className="mb-4 font-semibold text-foreground">Company</h3>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <Link to="/about" className="text-muted-foreground hover:text-primary transition-colors">
-                  About Us
-                </Link>
-              </li>
-              <li>
-                <Link to="/how-it-works" className="text-muted-foreground hover:text-primary transition-colors">
-                  How It Works
-                </Link>
-              </li>
-              <li>
-                <Link to="/sustainability" className="text-muted-foreground hover:text-primary transition-colors">
-                  Sustainability
-                </Link>
-              </li>
-              <li>
-                <Link to="/contact" className="text-muted-foreground hover:text-primary transition-colors">
-                  Contact
-                </Link>
-              </li>
-            </ul>
-          </div>
+const socials = [
+  { label: "LinkedIn", icon: Linkedin, href: "https://www.linkedin.com" },
+  { label: "Twitter", icon: Twitter, href: "https://twitter.com" },
+  { label: "Instagram", icon: Instagram, href: "https://www.instagram.com" },
+  { label: "GitHub", icon: Github, href: "https://github.com" },
+];
 
-          <div>
-            <h3 className="mb-4 font-semibold text-foreground">Support</h3>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <Link to="/help" className="text-muted-foreground hover:text-primary transition-colors">
-                  Help Center
-                </Link>
-              </li>
-              <li>
-                <Link to="/terms" className="text-muted-foreground hover:text-primary transition-colors">
-                  Terms of Service
-                </Link>
-              </li>
-              <li>
-                <Link to="/privacy" className="text-muted-foreground hover:text-primary transition-colors">
-                  Privacy Policy
-                </Link>
-              </li>
-              <li>
-                <Link to="/disputes" className="text-muted-foreground hover:text-primary transition-colors">
-                  Dispute Resolution
-                </Link>
-              </li>
-            </ul>
-          </div>
+export const Footer = () => (
+  <footer className="border-t border-border bg-card">
+    <div className="container py-14">
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))]">
+        <div>
+          <Brand />
+          <p className="mt-5 max-w-xs text-sm leading-relaxed text-muted-foreground">
+            Sustain operates a regulated secondary market for pre-owned goods — extending product lifecycles while
+            keeping settlement, custody and environmental reporting auditable.
+          </p>
+          <a
+            href="mailto:support@sustain.eco"
+            className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-foreground transition-colors hover:text-primary"
+          >
+            <Mail className="h-4 w-4" />
+            support@sustain.eco
+          </a>
         </div>
 
-        <div className="mt-12 border-t border-border pt-8 text-center text-sm text-muted-foreground">
-          <p className="flex items-center justify-center gap-2">
-            <Leaf className="h-4 w-4 text-primary" />
-            © 2024 Sustain. Building a sustainable future together.
-          </p>
+        {columns.map((column) => (
+          <div key={column.title}>
+            <h3 className="text-[11px] font-semibold uppercase tracking-wider text-foreground">{column.title}</h3>
+            <ul className="mt-4 space-y-2.5 text-sm">
+              {column.links.map((link) => (
+                <li key={link.label}>
+                  <Link to={link.to} className="text-muted-foreground transition-colors hover:text-foreground">
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+
+      <Separator className="my-10" />
+
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
+          <span>&copy; {new Date().getFullYear()} Sustain Markets Ltd.</span>
+          <span className="hidden sm:inline">Registered in England &amp; Wales</span>
+          <span className="hidden sm:inline">EcoCoin settlement subject to KYC verification</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {socials.map((social) => (
+            <a
+              key={social.label}
+              href={social.href}
+              target="_blank"
+              rel="noreferrer noopener"
+              aria-label={social.label}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+            >
+              <social.icon className="h-4 w-4" />
+            </a>
+          ))}
         </div>
       </div>
-    </footer>
-  );
-};
+
+      <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
+        <span>Terms of service</span>
+        <span>Privacy notice</span>
+        <span>Cookie preferences</span>
+        <span>Modern slavery statement</span>
+      </div>
+    </div>
+  </footer>
+);

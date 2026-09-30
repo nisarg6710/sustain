@@ -1,68 +1,75 @@
 import { Bot, Coins, Lock, Package, Sparkles, TrendingUp } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
+import { SectionHeading } from "@/components/SectionHeading";
+import { Reveal } from "@/components/Reveal";
+import { Card, CardContent } from "@/components/ui/card";
 
 const features = [
   {
     icon: Bot,
-    title: "AI-Powered Pricing",
-    description: "Our smart AI analyzes your items and suggests optimal pricing in eco coins based on condition, brand, and market trends.",
-  },
-  {
-    icon: Coins,
-    title: "Earn Eco Coins",
-    description: "Sell items to earn platform coins. Accumulate and withdraw to cash, or use them to buy other sustainable items.",
+    title: "AI-assisted valuation",
+    body: "Our models read condition, brand and category data to propose a defensible EcoCoin price, with the reasoning shown to the seller.",
+    meta: "Median suggestion acceptance 78%",
   },
   {
     icon: Sparkles,
-    title: "Auto-Generated Listings",
-    description: "AI creates compelling product descriptions and categorizes items automatically from your photos.",
+    title: "Structured catalogue data",
+    body: "Listings are normalised into a consistent schema at creation, so inventory stays comparable, searchable and reportable.",
+    meta: "12 attribute families",
   },
   {
     icon: Lock,
-    title: "Secure Escrow",
-    description: "All transactions protected by our secure escrow system until delivery is confirmed.",
+    title: "Escrow settlement",
+    body: "Every transaction is held by the platform and released to the seller on confirmed delivery, with a full dispute trail.",
+    meta: "2.1% dispute rate",
+  },
+  {
+    icon: Coins,
+    title: "EcoCoin ledger",
+    body: "A single internal unit of account for pricing, commission and payouts, with balances reconciled on every movement.",
+    meta: "Real-time balance",
   },
   {
     icon: Package,
-    title: "Easy Shipping",
-    description: "Integrated tracking and shipping management makes sending items effortless.",
+    title: "Fulfilment & tracking",
+    body: "Sellers record carrier and tracking references; buyers follow the shipment through to delivery confirmation.",
+    meta: "4.2 day median dispatch",
   },
   {
     icon: TrendingUp,
-    title: "Build Reputation",
-    description: "Earn ratings and build trust within our sustainable community marketplace.",
+    title: "Performance reporting",
+    body: "Conversion, yield and settlement reporting for sellers, and click-to-earnings attribution for affiliate partners.",
+    meta: "Exportable reporting",
   },
 ];
 
-export const Features = () => {
-  return (
-    <section className="py-24 bg-muted/30">
-      <div className="container mx-auto px-4">
-        <div className="mb-16 text-center">
-          <h2 className="mb-4 text-4xl font-bold text-foreground md:text-5xl">
-            Why Choose Sustain?
-          </h2>
-          <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-            A smarter, more sustainable way to buy and sell. Powered by AI, secured by technology, driven by community.
-          </p>
-        </div>
+export const Features = () => (
+  <section id="capabilities" className="border-b border-border py-20 md:py-24">
+    <div className="container">
+      <SectionHeading
+        eyebrow="Platform capabilities"
+        title="Operational controls for a regulated secondary market"
+        description="Everything required to move, price and settle pre-owned inventory — with the audit trail to prove it."
+      />
 
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {features.map((feature, index) => (
-            <Card key={index} className="border-border bg-card transition-all hover:shadow-lg hover:scale-105">
-              <CardHeader>
-                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-                  <feature.icon className="h-6 w-6 text-primary" />
+      <div className="mt-12 grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
+        {features.map((feature, index) => (
+          <Reveal key={feature.title} delay={index * 60}>
+            <Card className="h-full rounded-none border-0 bg-card shadow-none transition-colors hover:bg-secondary/40">
+              <CardContent className="p-6">
+                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
+                  <feature.icon className="h-5 w-5" />
                 </div>
-                <CardTitle className="text-xl">{feature.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-base">{feature.description}</CardDescription>
+                <h3 className="mt-5 text-[15px] font-semibold text-foreground">{feature.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{feature.body}</p>
+                <p className="mt-4 border-t border-border pt-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                  {feature.meta}
+                </p>
               </CardContent>
             </Card>
-          ))}
-        </div>
+          </Reveal>
+        ))}
       </div>
-    </section>
-  );
-};
+    </div>
+  </section>
+);

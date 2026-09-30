@@ -1,213 +1,211 @@
-import { Navigation } from "@/components/Navigation";
-import { Footer } from "@/components/Footer";
-import { Camera, Coins, Package, Search, Sparkles, CheckCircle, TrendingUp, Shield } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { Bot, Check, Package, Search, ShieldCheck, Wallet } from "lucide-react";
+
+import { AppLayout } from "@/components/AppLayout";
+import { PageHeader } from "@/components/PageHeader";
+import { SectionHeading } from "@/components/SectionHeading";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const steps = [
   {
-    icon: Camera,
+    icon: Package,
     step: "01",
-    title: "Upload Your Item",
-    description: "Take clear photos of your item (1-10 photos). Add details like title, category, condition, and description.",
-    details: [
-      "Capture multiple angles for better visibility",
-      "Include any defects or wear marks honestly",
-      "Choose the right category for easier discovery",
-      "Describe condition accurately (New, Like New, Good, Fair, Poor)"
-    ]
+    title: "Register the item",
+    summary:
+      "Attach up to ten photographs and complete the core attribute set: title, category, condition, description and fulfilment terms.",
+    detail: [
+      "Photograph multiple angles under neutral light",
+      "Disclose every functional fault and cosmetic mark",
+      "Select the most accurate category for discovery",
+      "Choose the fulfilment and returns policy up front",
+    ],
   },
   {
-    icon: Sparkles,
+    icon: Bot,
     step: "02",
-    title: "AI Analysis & Valuation",
-    description: "Our AI instantly analyzes your photos and details to suggest optimal EcoCoin pricing and sustainability impact.",
-    details: [
-      "AI examines condition, brand, and market demand",
-      "Suggests fair EcoCoin pricing automatically",
-      "Calculates environmental impact (CO₂ saved, waste reduced)",
-      "You can accept or adjust the AI suggestion"
-    ]
+    title: "Valuation and impact",
+    summary:
+      "The valuation service returns a recommended EcoCoin price with its reasoning, plus the estimated carbon and waste impact of recirculating the item.",
+    detail: [
+      "Recommendation reflects condition, brand and category",
+      "Impact estimate is stored against the listing",
+      "Accept the recommendation or override the price",
+      "Re-run the valuation if you change core attributes",
+    ],
   },
   {
     icon: Search,
     step: "03",
-    title: "List & Get Discovered",
-    description: "Your listing goes live instantly. Buyers can find it through search, filters, and category browsing.",
-    details: [
-      "Listing appears in marketplace immediately",
-      "Buyers search by category, condition, price range",
-      "Your sustainability impact is highlighted",
-      "Build your seller reputation with each transaction"
-    ]
+    title: "Publication and discovery",
+    summary:
+      "Listings publish immediately and surface through search, category and condition filters, with impact data visible on the product page.",
+    detail: [
+      "Structured attributes keep inventory comparable",
+      "Condition badges are shown consistently across views",
+      "Impact data is attached for reporting",
+      "Seller performance builds with each transaction",
+    ],
   },
   {
-    icon: Package,
+    icon: Wallet,
     step: "04",
-    title: "Sell & Earn EcoCoins",
-    description: "When a buyer purchases, ship the item with tracking. After delivery confirmation, EcoCoins are credited to your wallet.",
-    details: [
-      "Secure escrow holds coins until delivery confirmed",
-      "Ship with tracking for buyer confidence",
-      "Buyer confirms receipt and condition",
-      "EcoCoins credited automatically to your wallet"
-    ]
+    title: "Fulfilment and settlement",
+    summary:
+      "Ship with tracking. EcoCoins are credited to your wallet once the buyer confirms delivery and escrow releases to the seller.",
+    detail: [
+      "Buyer funds are held in escrow at checkout",
+      "Sellers record the carrier and tracking reference",
+      "Buyer confirms delivery to release settlement",
+      "Disputes pause settlement until they are resolved",
+    ],
   },
 ];
 
-const benefits = [
+const controls = [
   {
-    icon: Coins,
-    title: "EcoCoin Economy",
-    description: "Earn platform coins by selling sustainable items. Use coins to buy from the marketplace or withdraw to cash.",
+    icon: ShieldCheck,
+    title: "Escrow on every order",
+    body: "Funds move to a platform-held balance at checkout and are only released on confirmed delivery, with a complete audit trail.",
   },
   {
-    icon: TrendingUp,
-    title: "Build Reputation",
-    description: "Earn ratings and reviews from buyers. Higher reputation means more trust and faster sales.",
+    icon: Wallet,
+    title: "Auditable EcoCoin ledger",
+    body: "Every credit and debit is recorded against your account with a reference, timestamp and counterparty.",
   },
   {
-    icon: Shield,
-    title: "Secure Transactions",
-    description: "All payments protected by escrow system. Coins released only after buyer confirms delivery.",
+    icon: Search,
+    title: "Structured catalogue data",
+    body: "Listings are normalised into a consistent schema, keeping inventory comparable, searchable and reportable.",
   },
 ];
 
-const HowItWorks = () => {
-  return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      <main>
-        {/* Hero Section */}
-        <section className="py-16 bg-gradient-to-b from-primary/5 to-background">
-          <div className="container mx-auto px-4">
-            <div className="max-w-3xl mx-auto text-center">
-              <h1 className="mb-6 text-5xl font-bold text-foreground md:text-6xl">
-                How Sustain Works
-              </h1>
-              <p className="text-xl text-muted-foreground mb-8">
-                A sustainable marketplace powered by AI, secured by technology, and driven by community. 
-                Sell your items, earn EcoCoins, and make a positive environmental impact.
-              </p>
-              <Link to="/create-listing">
-                <Button size="lg" className="text-lg px-8 py-6">
-                  <Coins className="h-5 w-5 mr-2" />
-                  Start Selling Now
+const HowItWorks = () => (
+  <AppLayout contained={false}>
+    <PageHeader
+      eyebrow="Process guide"
+      title="How Sustain works"
+      description="The end-to-end workflow for sellers and buyers, from item registration through to settlement."
+      breadcrumbs={[{ label: "Home", to: "/" }, { label: "How it works" }]}
+      actions={
+        <>
+          <Button asChild variant="outline">
+            <Link to="/faq">Read the help centre</Link>
+          </Button>
+          <Button asChild>
+            <Link to="/create-listing">List an item</Link>
+          </Button>
+        </>
+      }
+    />
+
+    <div className="container space-y-16 py-12">
+      <section>
+        <SectionHeading
+          eyebrow="Four stages"
+          title="From intake to settled payout"
+          description="Each stage has defined inputs and outputs, so both sides of a trade know exactly what happens next."
+        />
+
+        <ol className="mt-10 space-y-px overflow-hidden rounded-lg border border-border bg-border">
+          {steps.map((step) => (
+            <li key={step.step}>
+              <Card className="rounded-none border-0 bg-card shadow-none">
+                <CardContent className="grid gap-6 p-6 lg:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)] lg:gap-10 lg:p-8">
+                  <div className="flex items-center gap-3 lg:block">
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-primary text-sm font-semibold tabular-nums text-primary-foreground">
+                      {step.step}
+                    </span>
+                    <step.icon className="mt-4 hidden h-5 w-5 text-muted-foreground lg:block" />
+                  </div>
+
+                  <div>
+                    <h3 className="text-base font-semibold text-foreground">{step.title}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{step.summary}</p>
+                  </div>
+
+                  <ul className="space-y-2.5">
+                    {step.detail.map((item) => (
+                      <li key={item} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section>
+        <SectionHeading
+          eyebrow="Controls"
+          title="What protects both sides of a trade"
+          description="Settlement controls are built into the workflow rather than bolted on afterwards."
+        />
+
+        <div className="mt-10 grid gap-px overflow-hidden rounded-lg border border-border bg-border md:grid-cols-3">
+          {controls.map((control) => (
+            <Card key={control.title} className="rounded-none border-0 bg-card shadow-none">
+              <CardContent className="p-6">
+                <control.icon className="h-5 w-5 text-primary" />
+                <h3 className="mt-4 text-[15px] font-semibold text-foreground">{control.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{control.body}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <Card>
+          <CardContent className="p-8">
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-center">
+              <div>
+                <Badge variant="accent">Next step</Badge>
+                <h2 className="mt-4 text-2xl font-semibold tracking-tight text-foreground">
+                  Publish your first listing
+                </h2>
+                <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
+                  Registration is free and there are no listing fees. The valuation service will suggest a price once
+                  your media and attributes are in place.
+                </p>
+                <Separator className="my-6" />
+                <Tabs defaultValue="seller">
+                  <TabsList>
+                    <TabsTrigger value="seller">I am selling</TabsTrigger>
+                    <TabsTrigger value="buyer">I am buying</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="seller" className="pt-4 text-sm text-muted-foreground">
+                    Create a listing, request a valuation and publish. You are notified when an order is placed and
+                    record dispatch with a tracking reference.
+                  </TabsContent>
+                  <TabsContent value="buyer" className="pt-4 text-sm text-muted-foreground">
+                    Browse the marketplace, filter by category and condition, then purchase with EcoCoins. Confirm
+                    delivery to release funds to the seller.
+                  </TabsContent>
+                </Tabs>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <Button asChild size="lg">
+                  <Link to="/create-listing">Create a listing</Link>
                 </Button>
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* Steps Section */}
-        <section className="py-24">
-          <div className="container mx-auto px-4">
-            <div className="mb-16 text-center">
-              <h2 className="mb-4 text-4xl font-bold text-foreground md:text-5xl">
-                Four Simple Steps
-              </h2>
-              <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-                From listing to earning, the process is seamless and sustainable
-              </p>
-            </div>
-
-            <div className="space-y-24">
-              {steps.map((step, index) => (
-                <div 
-                  key={index} 
-                  className={`flex flex-col lg:flex-row gap-12 items-center ${
-                    index % 2 === 1 ? 'lg:flex-row-reverse' : ''
-                  }`}
-                >
-                  <div className="flex-1">
-                    <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-dark shadow-lg mb-6">
-                      <step.icon className="h-10 w-10 text-primary-foreground" />
-                    </div>
-                    <div className="text-sm font-bold text-primary mb-3">{step.step}</div>
-                    <h3 className="text-3xl font-bold text-foreground mb-4">{step.title}</h3>
-                    <p className="text-lg text-muted-foreground mb-6">{step.description}</p>
-                    <ul className="space-y-3">
-                      {step.details.map((detail, idx) => (
-                        <li key={idx} className="flex items-start gap-3">
-                          <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                          <span className="text-muted-foreground">{detail}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="flex-1">
-                    <div className="bg-muted/50 rounded-2xl p-8 border-2 border-border h-80 flex items-center justify-center">
-                      <step.icon className="h-32 w-32 text-muted-foreground/20" />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Benefits Section */}
-        <section className="py-24 bg-muted/30">
-          <div className="container mx-auto px-4">
-            <div className="mb-16 text-center">
-              <h2 className="mb-4 text-4xl font-bold text-foreground md:text-5xl">
-                Why Choose Sustain?
-              </h2>
-              <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-                More than just a marketplace - a complete sustainable selling experience
-              </p>
-            </div>
-
-            <div className="grid gap-8 md:grid-cols-3">
-              {benefits.map((benefit, index) => (
-                <Card key={index} className="border-border bg-card transition-all hover:shadow-lg hover:scale-105">
-                  <CardHeader>
-                    <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-                      <benefit.icon className="h-6 w-6 text-primary" />
-                    </div>
-                    <CardTitle className="text-xl">{benefit.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription className="text-base">{benefit.description}</CardDescription>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* CTA Section */}
-        <section className="py-24">
-          <div className="container mx-auto px-4">
-            <div className="max-w-3xl mx-auto text-center">
-              <h2 className="mb-6 text-4xl font-bold text-foreground md:text-5xl">
-                Ready to Start?
-              </h2>
-              <p className="text-xl text-muted-foreground mb-8">
-                Join our sustainable community marketplace today. Turn your unused items into EcoCoins and make a positive environmental impact.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link to="/create-listing">
-                  <Button size="lg" className="text-lg px-8 py-6">
-                    <Coins className="h-5 w-5 mr-2" />
-                    List Your First Item
-                  </Button>
-                </Link>
-                <Link to="/marketplace">
-                  <Button variant="outline" size="lg" className="text-lg px-8 py-6">
-                    <Search className="h-5 w-5 mr-2" />
-                    Browse Marketplace
-                  </Button>
-                </Link>
+                <Button asChild size="lg" variant="outline">
+                  <Link to="/marketplace">Browse the marketplace</Link>
+                </Button>
               </div>
             </div>
-          </div>
-        </section>
-      </main>
-      <Footer />
+          </CardContent>
+        </Card>
+      </section>
     </div>
-  );
-};
+  </AppLayout>
+);
 
 export default HowItWorks;

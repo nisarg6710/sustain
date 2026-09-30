@@ -1,5 +1,10 @@
-import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { Compass } from "lucide-react";
+
+import { AppLayout } from "@/components/AppLayout";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 const NotFound = () => {
   const location = useLocation();
@@ -9,15 +14,33 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">404</h1>
-        <p className="mb-4 text-xl text-muted-foreground">Oops! Page not found</p>
-        <a href="/" className="text-primary underline hover:text-primary/90">
-          Return to Home
-        </a>
-      </div>
-    </div>
+    <AppLayout>
+      <Card className="mx-auto max-w-2xl">
+        <CardContent className="flex flex-col items-center p-10 text-center">
+          <p className="text-5xl font-semibold tabular-nums tracking-tight text-foreground">404</p>
+          <h1 className="mt-4 text-xl font-semibold text-foreground">Page not found</h1>
+          <p className="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
+            The page you requested does not exist or has been moved. Check the address, or continue from one of the
+            links below.
+          </p>
+
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <Button asChild>
+              <Link to="/">Return to home</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/marketplace">
+                <Compass className="h-4 w-4" />
+                Browse the marketplace
+              </Link>
+            </Button>
+            <Button asChild variant="ghost">
+              <Link to="/faq">Help centre</Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </AppLayout>
   );
 };
 

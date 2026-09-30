@@ -1,15 +1,37 @@
-import { Navigation } from "@/components/Navigation";
-import { Footer } from "@/components/Footer";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Heart, LayoutGrid, PackageSearch, Plus, Rows3, Search, SlidersHorizontal } from "lucide-react";
+
+import { AppLayout } from "@/components/AppLayout";
+import { PageHeader } from "@/components/PageHeader";
+import { EmptyState } from "@/components/EmptyState";
+import { ListingCard, EcoCoinAmount, ListingThumbnail } from "@/components/ListingCard";
+import { conditionVariant, formatCategory, formatCondition, formatDate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Coins, Heart, Search, SlidersHorizontal } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useWishlist } from "@/hooks/useWishlist";
+import { cn } from "@/lib/utils";
 
 interface Listing {
   id: string;
@@ -17,23 +39,55 @@ interface Listing {
   category: string;
   condition: string;
   price_ecocoins: number;
-  photos: string[];
-  description: string;
+  photos: string[] | null;
+  description: string | null;
+  created_at: string | null;
 }
+
+const categories = [
+  { value: "all", label: "All categories" },
+  { value: "electronics", label: "Electronics" },
+  { value: "fashion", label: "Fashion" },
+  { value: "home", label: "Home & garden" },
+  { value: "sports", label: "Sports & outdoors" },
+  { value: "books", label: "Books & media" },
+  { value: "toys", label: "Toys & games" },
+];
+
+const conditions = [
+  { value: "all", label: "Any condition" },
+  { value: "new", label: "New" },
+  { value: "like-new", label: "Like new" },
+  { value: "good", label: "Good" },
+  { value: "fair", label: "Fair" },
+  { value: "poor", label: "Poor" },
+];
+
+const sortOptions = [
+  { value: "newest", label: "Newest first" },
+  { value: "price-asc", label: "Price: low to high" },
+  { value: "price-desc", label: "Price: high to low" },
+  { value: "title", label: "Title A–Z" },
+];
+
+type ViewMode = "grid" | "table";
 
 const Marketplace = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState(searchParams.get("category") ?? "all");
+  const [conditionFilter, setConditionFilter] = useState("all");
+  const [sort, setSort] = useState("newest");
+  const [view, setView] = useState<ViewMode>("grid");
+  const [savedOnly, setSavedOnly] = useState(false);
+  const { ids: savedIds, count: savedCount } = useWishlist();
 
-  useEffect(() => {
-    fetchListings();
-  }, []);
-
-  const fetchListings = async () => {
+  const fetchListings = useCallback(async () => {
     const { data, error } = await supabase
       .from("listings")
       .select("*")
@@ -42,156 +96,338 @@ const Marketplace = () => {
 
     if (error) {
       toast({
-        title: "Error",
-        description: "Failed to load listings",
+        title: "Unable to load listings",
+        description: "The marketplace could not be reached. Please try again.",
         variant: "destructive",
       });
       setLoading(false);
       return;
     }
 
-    setListings(data || []);
+    setListings((data as Listing[]) || []);
     setLoading(false);
+  }, [toast]);
+
+  useEffect(() => {
+    fetchListings();
+  }, [fetchListings]);
+
+  useEffect(() => {
+    const category = searchParams.get("category");
+    if (category) setCategoryFilter(category);
+  }, [searchParams]);
+
+  const handleCategoryChange = (value: string) => {
+    setCategoryFilter(value);
+    if (value === "all") {
+      searchParams.delete("category");
+    } else {
+      searchParams.set("category", value);
+    }
+    setSearchParams(searchParams, { replace: true });
   };
 
-  const filteredListings = listings.filter(listing => {
-    const matchesSearch = listing.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         listing.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = categoryFilter === "all" || 
-                           listing.category.toLowerCase() === categoryFilter.toLowerCase();
-    return matchesSearch && matchesCategory;
-  });
+  const filteredListings = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    const result = listings.filter((listing) => {
+      const matchesSearch =
+        !query ||
+        listing.title.toLowerCase().includes(query) ||
+        (listing.description ?? "").toLowerCase().includes(query);
+      const matchesCategory = categoryFilter === "all" || listing.category === categoryFilter;
+      const matchesCondition = conditionFilter === "all" || listing.condition === conditionFilter;
+      const matchesSaved = !savedOnly || savedIds.includes(listing.id);
+      return matchesSearch && matchesCategory && matchesCondition && matchesSaved;
+    });
+
+    return [...result].sort((a, b) => {
+      switch (sort) {
+        case "price-asc":
+          return a.price_ecocoins - b.price_ecocoins;
+        case "price-desc":
+          return b.price_ecocoins - a.price_ecocoins;
+        case "title":
+          return a.title.localeCompare(b.title);
+        default:
+          return new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime();
+      }
+    });
+  }, [listings, searchQuery, categoryFilter, conditionFilter, sort, savedOnly, savedIds]);
+
+  const filtersActive =
+    categoryFilter !== "all" || conditionFilter !== "all" || searchQuery.trim() !== "" || savedOnly;
+
+  const resetFilters = () => {
+    setSearchQuery("");
+    setCategoryFilter("all");
+    setConditionFilter("all");
+    setSavedOnly(false);
+    setSearchParams({}, { replace: true });
+  };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="mb-2 text-4xl font-bold text-foreground">Marketplace</h1>
-          <p className="text-muted-foreground">Discover sustainable treasures from our community</p>
-        </div>
+    <AppLayout contained={false}>
+      <PageHeader
+        eyebrow="Marketplace"
+        title="Live inventory"
+        description="Every listing is escrowed on settlement, verified for condition and reported for environmental impact."
+        breadcrumbs={[{ label: "Home", to: "/" }, { label: "Marketplace" }]}
+        actions={
+          <Button asChild>
+            <Link to="/create-listing">
+              <Plus className="h-4 w-4" />
+              List an item
+            </Link>
+          </Button>
+        }
+        meta={
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline" className="tabular-nums">
+              {loading ? "Loading inventory" : `${filteredListings.length} of ${listings.length} listings`}
+            </Badge>
+            {savedCount > 0 && (
+              <Badge variant="secondary" className="gap-1">
+                <Heart className="h-3 w-3 fill-current" />
+                {savedCount} saved
+              </Badge>
+            )}
+            {filtersActive && (
+              <Button variant="ghost" size="xs" onClick={resetFilters}>
+                Clear filters
+              </Button>
+            )}
+          </div>
+        }
+      />
 
-        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-            <Input 
-              placeholder="Search for items..." 
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+      <div className="container py-8">
+        <Card className="mb-8 p-4">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-end">
+            <div className="space-y-2">
+              <Label htmlFor="marketplace-search">Search inventory</Label>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="marketplace-search"
+                  placeholder="Search by title or description"
+                  className="pl-9"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="category-filter">Category</Label>
+              <Select value={categoryFilter} onValueChange={handleCategoryChange}>
+                <SelectTrigger id="category-filter" className="w-full lg:w-[200px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category.value} value={category.value}>
+                      {category.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="condition-filter">Condition</Label>
+              <Select value={conditionFilter} onValueChange={setConditionFilter}>
+                <SelectTrigger id="condition-filter" className="w-full lg:w-[170px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {conditions.map((condition) => (
+                    <SelectItem key={condition.value} value={condition.value}>
+                      {condition.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          
-          <div className="flex gap-3">
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="electronics">Electronics</SelectItem>
-                <SelectItem value="fashion">Fashion</SelectItem>
-                <SelectItem value="home">Home & Garden</SelectItem>
-                <SelectItem value="sports">Sports</SelectItem>
-                <SelectItem value="books">Books</SelectItem>
-                <SelectItem value="toys">Toys</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            <Button variant="outline">
-              <SlidersHorizontal className="mr-2 h-4 w-4" />
-              Filters
+
+          <Separator className="my-4" />
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <SlidersHorizontal className="h-4 w-4" />
+              <span>Sorted by</span>
+              <Select value={sort} onValueChange={setSort}>
+                <SelectTrigger className="h-8 w-[190px] border-0 bg-transparent px-0 text-sm font-medium text-foreground shadow-none hover:border-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {sortOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center gap-1 rounded-md border border-border p-1">
+              <Button
+                variant={view === "grid" ? "secondary" : "ghost"}
+                size="xs"
+                onClick={() => setView("grid")}
+                aria-pressed={view === "grid"}
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+                Grid
+              </Button>
+              <Button
+                variant={view === "table" ? "secondary" : "ghost"}
+                size="xs"
+                onClick={() => setView("table")}
+                aria-pressed={view === "table"}
+              >
+                <Rows3 className="h-3.5 w-3.5" />
+                Table
+              </Button>
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-4">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Quick filters
+            </span>
+            <Button
+              variant={savedOnly ? "default" : "outline"}
+              size="xs"
+              onClick={() => setSavedOnly((current) => !current)}
+              aria-pressed={savedOnly}
+            >
+              <Heart className={cn("h-3.5 w-3.5", savedOnly && "fill-current")} />
+              Saved items
+              {savedCount > 0 && (
+                <span
+                  className={cn(
+                    "ml-0.5 rounded px-1 text-[11px] tabular-nums",
+                    savedOnly ? "bg-primary-foreground/20" : "bg-secondary text-secondary-foreground",
+                  )}
+                >
+                  {savedCount}
+                </span>
+              )}
             </Button>
+            {categories
+              .filter((category) => category.value !== "all")
+              .slice(0, 4)
+              .map((category) => (
+                <Button
+                  key={category.value}
+                  variant={categoryFilter === category.value ? "secondary" : "ghost"}
+                  size="xs"
+                  onClick={() => handleCategoryChange(categoryFilter === category.value ? "all" : category.value)}
+                >
+                  {category.label}
+                </Button>
+              ))}
           </div>
-        </div>
+        </Card>
 
         {loading ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <Card key={i} className="overflow-hidden">
-                <div className="h-64 w-full animate-pulse bg-muted" />
-                <CardContent className="p-4">
-                  <div className="h-4 w-20 animate-pulse bg-muted rounded mb-2" />
-                  <div className="h-6 w-full animate-pulse bg-muted rounded mb-2" />
-                  <div className="h-4 w-32 animate-pulse bg-muted rounded" />
-                </CardContent>
+            {Array.from({ length: 6 }).map((_, index) => (
+              <Card key={index} className="overflow-hidden">
+                <div className="shimmer aspect-[4/3] w-full" />
+                <div className="space-y-3 p-5">
+                  <div className="shimmer h-3 w-20 rounded" />
+                  <div className="shimmer h-4 w-3/4 rounded" />
+                  <div className="shimmer h-4 w-16 rounded" />
+                </div>
               </Card>
             ))}
           </div>
         ) : filteredListings.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground text-lg">No listings found</p>
-            <Button className="mt-4" onClick={() => navigate("/create-listing")}>
-              Create Your First Listing
-            </Button>
-          </div>
-        ) : (
+          <EmptyState
+            icon={savedOnly && savedCount > 0 ? Heart : PackageSearch}
+            title={
+              savedOnly && savedCount > 0
+                ? "No saved items match these filters"
+                : filtersActive
+                  ? "No inventory matches these filters"
+                  : "No active listings yet"
+            }
+            description={
+              savedOnly && savedCount > 0
+                ? "Your saved items are hidden by the current search or category filter."
+                : filtersActive
+                  ? "Adjust or clear your filters to see the full catalogue."
+                  : "Be the first to publish an item and start earning EcoCoins."
+            }
+            action={
+              filtersActive ? (
+                <Button variant="outline" onClick={resetFilters}>
+                  Clear filters
+                </Button>
+              ) : (
+                <Button onClick={() => navigate("/create-listing")}>
+                  <Plus className="h-4 w-4" />
+                  Create the first listing
+                </Button>
+              )
+            }
+          />
+        ) : view === "grid" ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredListings.map((listing) => (
-              <Card 
-                key={listing.id} 
-                className="overflow-hidden transition-all hover:shadow-lg cursor-pointer"
-                onClick={() => navigate(`/product/${listing.id}`)}
-              >
-                <CardHeader className="p-0">
-                  <div className="relative">
-                    <img 
-                      src={listing.photos?.[0] || "https://images.unsplash.com/photo-1560393464-5c69a73c5770?w=400"} 
-                      alt={listing.title}
-                      className="h-64 w-full object-cover"
-                    />
-                    <Button 
-                      size="icon" 
-                      variant="secondary" 
-                      className="absolute right-3 top-3 h-9 w-9 rounded-full"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Heart className="h-4 w-4" />
-                    </Button>
-                    <Badge className="absolute left-3 top-3 bg-primary">
-                      {listing.condition}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="p-4">
-                  <Badge variant="outline" className="mb-2">
-                    {listing.category}
-                  </Badge>
-                  <h3 className="mb-2 font-semibold text-foreground line-clamp-1">
-                    {listing.title}
-                  </h3>
-                  <p className="mb-3 text-sm text-muted-foreground line-clamp-2">
-                    {listing.description}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1 text-lg font-bold text-primary">
-                      <Coins className="h-5 w-5" />
-                      {listing.price_ecocoins}
-                    </div>
-                    <Button onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/product/${listing.id}`);
-                    }}>View Details</Button>
-                  </div>
-                </CardContent>
-              </Card>
+              <ListingCard key={listing.id} listing={listing} />
             ))}
           </div>
+        ) : (
+          <Card className="overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[38%]">Item</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Condition</TableHead>
+                  <TableHead className="text-right">Price</TableHead>
+                  <TableHead className="text-right">Listed</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredListings.map((listing) => (
+                  <TableRow
+                    key={listing.id}
+                    className="cursor-pointer"
+                    onClick={() => navigate(`/product/${listing.id}`)}
+                  >
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <ListingThumbnail
+                          photo={listing.photos?.[0]}
+                          title={listing.title}
+                          className={cn("h-11 w-11 shrink-0 rounded-md border border-border")}
+                        />
+                        <span className="line-clamp-1 font-medium text-foreground">{listing.title}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{formatCategory(listing.category)}</TableCell>
+                    <TableCell>
+                      <Badge variant={conditionVariant[listing.condition] ?? "secondary"}>
+                        {formatCondition(listing.condition)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <EcoCoinAmount value={listing.price_ecocoins} size="sm" />
+                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground">{formatDate(listing.created_at)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
         )}
-
-        {!loading && filteredListings.length > 0 && (
-          <div className="mt-12 text-center">
-            <p className="text-muted-foreground">
-              Showing {filteredListings.length} listing{filteredListings.length !== 1 ? 's' : ''}
-            </p>
-          </div>
-        )}
-      </main>
-      
-      <Footer />
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 
