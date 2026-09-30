@@ -8,6 +8,7 @@ import {
   Leaf,
   Link2,
   Linkedin,
+  Loader2,
   Lock,
   Mail,
   MessageCircle,
@@ -29,7 +30,6 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -49,7 +49,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAffiliate } from "@/hooks/useIsAffiliate";
 import { useToast } from "@/hooks/use-toast";
-import { conditionVariant, formatCategory, formatCondition, formatDate } from "@/lib/format";
+import { conditionVariant, formatCategory, formatCondition, formatCoins, formatDate } from "@/lib/format";
 import { describeEdgeFunctionError } from "@/lib/edgeFunctions";
 import { burstConfetti } from "@/lib/confetti";
 import { cn } from "@/lib/utils";
@@ -228,7 +228,6 @@ const ProductDetails = () => {
         variant: "destructive",
       });
       setPurchasing(false);
-      setShowPurchaseDialog(false);
       return;
     }
 
@@ -321,7 +320,7 @@ const ProductDetails = () => {
             </TabsList>
 
             <TabsContent value="description" className="pt-6">
-              <p className="max-w-2xl text-[15px] leading-relaxed text-muted-foreground">
+              <p className="max-w-2xl text-lede leading-relaxed text-muted-foreground">
                 {listing.description || "The seller has not provided a description for this item."}
               </p>
             </TabsContent>
@@ -373,7 +372,7 @@ const ProductDetails = () => {
             </div>
           )}
 
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <p className="eyebrow-muted">
             {formatCategory(listing.category)}
           </p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">{listing.title}</h1>
@@ -389,17 +388,17 @@ const ProductDetails = () => {
 
           <div className="flex items-end justify-between gap-4">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Asking price</p>
+              <p className="eyebrow-muted">Asking price</p>
               <EcoCoinAmount value={listing.price_ecocoins} size="lg" className="mt-1" />
             </div>
             {user && (
               <div className="text-right">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <p className="eyebrow-muted">
                   Wallet balance
                 </p>
                 <p className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium tabular-nums text-foreground">
-                  <Wallet className="h-4 w-4 text-primary" />
-                  {walletBalance} EC
+                  <Wallet className="h-4 w-4 text-primary" aria-hidden="true" />
+                  {formatCoins(walletBalance)}
                 </p>
               </div>
             )}
@@ -407,7 +406,7 @@ const ProductDetails = () => {
 
           {listing.sustainability_impact && (
             <div className="mt-6 rounded-lg border border-border bg-secondary/40 p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <p className="eyebrow-muted">
                 Sustainability impact
               </p>
               <p className="mt-1.5 text-sm leading-relaxed text-foreground">{listing.sustainability_impact}</p>
@@ -478,7 +477,7 @@ const ProductDetails = () => {
                   <Separator />
 
                   <div className="space-y-2">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <p className="eyebrow-muted">
                       {isAffiliate ? "Affiliate link" : "Direct link"}
                     </p>
                     <div className="flex gap-2">
@@ -527,7 +526,7 @@ const ProductDetails = () => {
 
           <Card className="mt-6 bg-secondary/40">
             <CardContent className="p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <p className="eyebrow-muted">
                 Buyer protection
               </p>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
@@ -539,7 +538,15 @@ const ProductDetails = () => {
         </div>
       </div>
 
-      <AlertDialog open={showPurchaseDialog} onOpenChange={setShowPurchaseDialog}>
+      <AlertDialog
+        open={showPurchaseDialog}
+        onOpenChange={(open) => {
+          // Keep the dialog mounted while the edge function is in flight so the
+          // user can see progress and recover from a failure.
+          if (purchasing) return;
+          setShowPurchaseDialog(open);
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm purchase</AlertDialogTitle>
@@ -552,15 +559,17 @@ const ProductDetails = () => {
                 <dl className="divide-y divide-border rounded-md border border-border">
                   <div className="flex items-center justify-between px-3 py-2">
                     <dt>Current balance</dt>
-                    <dd className="tabular-nums">{walletBalance} EC</dd>
+                    <dd className="tabular-nums">{formatCoins(walletBalance)}</dd>
                   </div>
                   <div className="flex items-center justify-between px-3 py-2">
                     <dt>Item price</dt>
-                    <dd className="tabular-nums">−{listing.price_ecocoins} EC</dd>
+                    <dd className="tabular-nums">{formatCoins(-listing.price_ecocoins)}</dd>
                   </div>
                   <div className="flex items-center justify-between px-3 py-2">
                     <dt className="font-medium text-foreground">Balance after purchase</dt>
-                    <dd className="font-medium tabular-nums text-foreground">{balanceAfterPurchase} EC</dd>
+                    <dd className="font-medium tabular-nums text-foreground">
+                      {formatCoins(balanceAfterPurchase)}
+                    </dd>
                   </div>
                 </dl>
                 <p>EcoCoins are held in escrow until you confirm delivery of the item.</p>
@@ -569,9 +578,18 @@ const ProductDetails = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={purchasing}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmPurchase} disabled={purchasing}>
-              {purchasing ? "Processing…" : "Confirm purchase"}
-            </AlertDialogAction>
+            {/* AlertDialogAction closes the dialog on click, which would hide
+                the in-flight state. A plain Button keeps it open. */}
+            <Button onClick={confirmPurchase} disabled={purchasing}>
+              {purchasing ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Processing…
+                </>
+              ) : (
+                "Confirm purchase"
+              )}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

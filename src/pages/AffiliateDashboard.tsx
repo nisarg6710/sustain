@@ -8,6 +8,7 @@ import { PageLoader } from "@/components/PageLoader";
 import { StatCard } from "@/components/StatCard";
 import { EmptyState } from "@/components/EmptyState";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
@@ -125,15 +126,13 @@ const AffiliateDashboard = () => {
           title="Affiliate access required"
           description="This reporting area is available to approved affiliate partners. Contact the partnerships team to have your account enabled."
           action={
-            <button
-              type="button"
-              onClick={() => {
-                toast({ title: "Request sent", description: "The partnerships team will be in touch." });
-              }}
-              className="text-sm font-medium text-primary hover:underline"
-            >
-              Request affiliate access
-            </button>
+            /* This previously fired a success toast without sending anything.
+               A mailto genuinely delivers the request. */
+            <Button asChild>
+              <a href="mailto:support@sustain.eco?subject=Affiliate%20access%20request">
+                Request affiliate access
+              </a>
+            </Button>
           }
         />
       </AppLayout>
@@ -155,7 +154,7 @@ const AffiliateDashboard = () => {
         }
       />
 
-      <div className="container space-y-8 py-8">
+      <div className="container space-y-8 py-8 md:py-10">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             label="Commission earned"

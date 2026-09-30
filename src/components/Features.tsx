@@ -55,14 +55,14 @@ export const Features = () => (
       <div className="mt-12 grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
         {features.map((feature, index) => (
           <Reveal key={feature.title} delay={index * 60}>
-            <Card className="h-full rounded-none border-0 bg-card shadow-none transition-colors hover:bg-secondary/40">
+            <Card variant="bare" className="h-full transition-colors hover:bg-secondary/40">
               <CardContent className="p-6">
                 <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
                   <feature.icon className="h-5 w-5" />
                 </div>
-                <h3 className="mt-5 text-[15px] font-semibold text-foreground">{feature.title}</h3>
+                <h3 className="mt-5 text-card-title font-semibold text-foreground">{feature.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{feature.body}</p>
-                <p className="mt-4 border-t border-border pt-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                <p className="eyebrow-muted mt-4 border-t border-border pt-3">
                   {feature.meta}
                 </p>
               </CardContent>

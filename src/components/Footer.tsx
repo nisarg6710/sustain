@@ -35,6 +35,13 @@ const columns = [
   },
 ];
 
+const legal = [
+  { label: "Terms of service", to: "/legal#terms" },
+  { label: "Privacy notice", to: "/legal#privacy" },
+  { label: "Cookie preferences", to: "/legal#cookies" },
+  { label: "Modern slavery statement", to: "/legal#modern-slavery" },
+];
+
 const socials = [
   { label: "LinkedIn", icon: Linkedin, href: "https://www.linkedin.com" },
   { label: "Twitter", icon: Twitter, href: "https://twitter.com" },
@@ -63,11 +70,14 @@ export const Footer = () => (
 
         {columns.map((column) => (
           <div key={column.title}>
-            <h3 className="text-[11px] font-semibold uppercase tracking-wider text-foreground">{column.title}</h3>
-            <ul className="mt-4 space-y-2.5 text-sm">
+            <h3 className="eyebrow text-foreground">{column.title}</h3>
+            <ul className="mt-4 space-y-1 text-sm">
               {column.links.map((link) => (
                 <li key={link.label}>
-                  <Link to={link.to} className="text-muted-foreground transition-colors hover:text-foreground">
+                  <Link
+                    to={link.to}
+                    className="-mx-3 inline-block rounded px-3 py-2 text-muted-foreground transition-colors hover:text-foreground"
+                  >
                     {link.label}
                   </Link>
                 </li>
@@ -94,7 +104,7 @@ export const Footer = () => (
               target="_blank"
               rel="noreferrer noopener"
               aria-label={social.label}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
             >
               <social.icon className="h-4 w-4" />
             </a>
@@ -102,12 +112,13 @@ export const Footer = () => (
         </div>
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
-        <span>Terms of service</span>
-        <span>Privacy notice</span>
-        <span>Cookie preferences</span>
-        <span>Modern slavery statement</span>
-      </div>
+      <nav aria-label="Legal" className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
+        {legal.map((item) => (
+          <Link key={item.label} to={item.to} className="transition-colors hover:text-foreground">
+            {item.label}
+          </Link>
+        ))}
+      </nav>
     </div>
   </footer>
 );

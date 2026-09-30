@@ -44,10 +44,14 @@ const testimonials: Testimonial[] = [
 ];
 
 const StarRow = () => (
-  <div className="flex items-center gap-1" aria-label="Rated 4.8 out of 5">
-    {Array.from({ length: 5 }).map((_, index) => (
-      <Star key={index} className="h-4 w-4 fill-accent text-accent" />
-    ))}
+  <div className="flex items-center gap-1">
+    {/* The stars are decorative; the rating is stated in text beside them, so
+        exposing the icons individually would just add noise. */}
+    <span className="flex items-center gap-1" role="img" aria-label="Rated 4.8 out of 5">
+      {Array.from({ length: 5 }).map((_, index) => (
+        <Star key={index} className="h-4 w-4 fill-accent text-accent" aria-hidden="true" />
+      ))}
+    </span>
     <span className="ml-2 text-sm font-semibold tabular-nums text-foreground">4.8</span>
     <span className="text-sm text-muted-foreground">from 2,400+ reviews</span>
   </div>
@@ -70,7 +74,7 @@ export const Testimonials = () => (
             <figure className="relative flex h-full flex-col rounded-lg border border-border bg-card p-6 transition-shadow hover:shadow-md">
               <Quote className="h-6 w-6 text-primary/30" aria-hidden="true" />
 
-              <blockquote className="mt-4 flex-1 text-[15px] leading-relaxed text-foreground">
+              <blockquote className="mt-4 flex-1 text-lede leading-relaxed text-foreground">
                 {testimonial.quote}
               </blockquote>
 

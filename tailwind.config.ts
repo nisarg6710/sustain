@@ -99,6 +99,17 @@ export default {
         md: "calc(var(--radius) - 1px)",
         sm: "calc(var(--radius) - 2px)",
       },
+      fontSize: {
+        "card-title": ["0.9375rem", { lineHeight: "1.375" }],
+        lede: ["1.0625rem", { lineHeight: "1.625" }],
+        "section-title": ["2rem", { lineHeight: "1.2", letterSpacing: "-0.02em" }],
+      },
+      zIndex: {
+        header: "50",
+        "skip-link": "60",
+        overlay: "50",
+        toast: "100",
+      },
       boxShadow: {
         xs: "var(--shadow-xs)",
         sm: "var(--shadow-sm)",

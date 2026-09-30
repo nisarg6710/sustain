@@ -15,7 +15,7 @@ interface StatCardProps {
 export const StatCard = ({ label, value, unit, hint, icon: Icon, trend, className }: StatCardProps) => (
   <Card className={cn("p-5", className)}>
     <div className="flex items-start justify-between gap-3">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="eyebrow-muted">{label}</p>
       {Icon && (
         <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-secondary text-primary">
           <Icon className="h-4 w-4" />

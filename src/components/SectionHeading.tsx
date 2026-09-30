@@ -19,20 +19,22 @@ export const SectionHeading = ({
 }: SectionHeadingProps) => (
   <div
     className={cn(
-      "flex flex-col gap-4 md:flex-row md:items-end md:justify-between",
+      "flex flex-col gap-4 md:flex-row md:items-end md:justify-between md:flex-wrap",
       align === "center" && "md:flex-col md:items-center md:text-center",
       className,
     )}
   >
     <div className={cn("max-w-2xl", align === "center" && "mx-auto")}>
       {eyebrow && <p className="eyebrow mb-3">{eyebrow}</p>}
-      <h2 className="text-2xl font-semibold tracking-tight text-foreground md:text-[32px] md:leading-[1.15]">
+      <h2 className="text-2xl font-semibold tracking-tight text-foreground md:text-section-title">
         {title}
       </h2>
       {description && (
-        <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">{description}</p>
+        <p className="mt-3 text-lede leading-relaxed text-muted-foreground">{description}</p>
       )}
     </div>
-    {children && <div className="flex shrink-0 items-center gap-3">{children}</div>}
+    {children && (
+      <div className="flex w-full shrink-0 flex-wrap items-center gap-3 md:w-auto">{children}</div>
+    )}
   </div>
 );

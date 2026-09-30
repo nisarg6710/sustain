@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowDownRight, ArrowUpRight, Wallet as WalletIcon, Receipt, Plus, Activity } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Wallet as WalletIcon, Receipt, Plus, Activity, Minus } from "lucide-react";
 
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -14,7 +14,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { formatTimestamp, titleCase } from "@/lib/format";
+import { formatCoins, formatTimestamp, titleCase } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 interface Transaction {
   id: string;
@@ -79,15 +80,20 @@ const Wallet = () => {
         </TableHeader>
         <TableBody>
           {rows.map((transaction) => {
+            // A zero-amount entry is neither a credit nor a debit; treating it
+            // as a debit rendered "0 EC" in red with a down arrow.
+            const isZero = transaction.amount === 0;
             const isCredit = transaction.amount > 0;
             return (
               <TableRow key={transaction.id}>
                 <TableCell>
                   <span className="inline-flex items-center gap-2 font-medium text-foreground">
-                    {isCredit ? (
-                      <ArrowUpRight className="h-3.5 w-3.5 text-success" />
+                    {isZero ? (
+                      <Minus className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+                    ) : isCredit ? (
+                      <ArrowUpRight className="h-3.5 w-3.5 text-success" aria-hidden="true" />
                     ) : (
-                      <ArrowDownRight className="h-3.5 w-3.5 text-destructive" />
+                      <ArrowDownRight className="h-3.5 w-3.5 text-destructive" aria-hidden="true" />
                     )}
                     {titleCase(transaction.transaction_type)}
                   </span>
@@ -99,10 +105,12 @@ const Wallet = () => {
                   {formatTimestamp(transaction.created_at)}
                 </TableCell>
                 <TableCell
-                  className={`text-right font-medium tabular-nums ${isCredit ? "text-success" : "text-destructive"}`}
+                  className={cn(
+                    "text-right font-medium tabular-nums",
+                    isZero ? "text-muted-foreground" : isCredit ? "text-success" : "text-destructive",
+                  )}
                 >
-                  {isCredit ? "+" : ""}
-                  {transaction.amount} EC
+                  {formatCoins(transaction.amount, { signed: !isZero })}
                 </TableCell>
               </TableRow>
             );
@@ -141,7 +149,7 @@ const Wallet = () => {
         }
       />
 
-      <div className="container space-y-8 py-8">
+      <div className="container space-y-8 py-8 md:py-10">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             label="Available balance"
@@ -165,10 +173,11 @@ const Wallet = () => {
             hint="Purchases and fees"
           />
           <StatCard
-            label="Ledger entries"
+            label="Recent entries"
             value={summary.count}
             icon={Activity}
-            hint="Most recent 50 movements"
+            // The query is capped at 50, so this is not a lifetime total.
+            hint={summary.count >= 50 ? "Showing the latest 50" : "Most recent movements"}
           />
         </div>
 

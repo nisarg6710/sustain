@@ -42,6 +42,17 @@ export const formatTimestamp = (value?: string | null) => {
 
 export const formatNumber = (value: number) => value.toLocaleString("en-GB");
 
+/**
+ * Single source of truth for EcoCoin amounts. Previously four different
+ * strategies were in use, so `1,234` and `1234` appeared on adjacent screens.
+ * Set `signed` to always render an explicit + or −.
+ */
+export const formatCoins = (value: number, options?: { signed?: boolean; suffix?: boolean }) => {
+  const { signed = false, suffix = true } = options ?? {};
+  const sign = value < 0 ? "−" : signed ? "+" : "";
+  return `${sign}${formatNumber(Math.abs(value))}${suffix ? " EC" : ""}`;
+};
+
 export const titleCase = (value?: string | null) =>
   (value ?? "")
     .split(/[_\s]/)

@@ -74,7 +74,7 @@ export const Impact = () => (
         {pillars.map((pillar, index) => (
           <Reveal key={pillar.title} delay={index * 80}>
             <pillar.icon className="h-5 w-5 text-primary" />
-            <h3 className="mt-4 text-[15px] font-semibold text-foreground">{pillar.title}</h3>
+            <h3 className="mt-4 text-card-title font-semibold text-foreground">{pillar.title}</h3>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{pillar.body}</p>
           </Reveal>
         ))}
@@ -87,13 +87,13 @@ export const CtaSection = () => (
   <section className="border-b border-border bg-primary text-primary-foreground">
     <div className="container flex flex-col items-start justify-between gap-8 py-16 lg:flex-row lg:items-center">
       <div className="max-w-2xl">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-foreground/70">
+        <p className="eyebrow text-primary-foreground/70">
           Get started
         </p>
         <h2 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">
           Open an account and start recirculating inventory today
         </h2>
-        <p className="mt-4 text-[15px] leading-relaxed text-primary-foreground/80">
+        <p className="mt-4 text-lede leading-relaxed text-primary-foreground/80">
           Free to register, no listing fees, and settlement held safely in escrow until delivery is confirmed.
         </p>
       </div>

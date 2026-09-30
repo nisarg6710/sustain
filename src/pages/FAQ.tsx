@@ -181,10 +181,10 @@ const FAQ = () => (
       }
     />
 
-    <div className="container grid gap-10 py-10 lg:grid-cols-[220px_minmax(0,1fr)]">
+    <div className="container grid gap-10 py-8 md:py-10 lg:grid-cols-[220px_minmax(0,1fr)]">
       <nav aria-label="Sections" className="hidden lg:block">
         <div className="sticky top-28">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Sections</p>
+          <p className="eyebrow-muted">Sections</p>
           <ul className="mt-4 space-y-1.5">
             {faqCategories.map((category) => (
               <li key={category.id}>

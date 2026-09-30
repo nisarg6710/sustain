@@ -11,12 +11,19 @@ import {
   Plus,
   ShoppingBag,
   Wallet,
-  X,
+  type LucideIcon,
 } from "lucide-react";
 
 import { Brand } from "@/components/Brand";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,6 +42,27 @@ const primaryLinks = [
   { label: "Support", to: "/faq" },
 ];
 
+const MobileLink = ({
+  to,
+  onNavigate,
+  icon: Icon,
+  label,
+}: {
+  to: string;
+  onNavigate: () => void;
+  icon: LucideIcon;
+  label: string;
+}) => (
+  <Link
+    to={to}
+    onClick={onNavigate}
+    className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-medium text-muted-foreground"
+  >
+    <Icon className="h-4 w-4" />
+    {label}
+  </Link>
+);
+
 export const Navigation = () => {
   const { user, signOut } = useAuth();
   const { isAffiliate } = useIsAffiliate();
@@ -43,8 +71,10 @@ export const Navigation = () => {
 
   const isActive = (to: string) => location.pathname === to || location.pathname.startsWith(`${to}/`);
 
+  const closeMenu = () => setMobileOpen(false);
+
   const handleSignOut = async () => {
-    setMobileOpen(false);
+    closeMenu();
     await signOut();
   };
 
@@ -55,9 +85,10 @@ export const Navigation = () => {
           <p className="font-medium">Circular commerce infrastructure for pre-owned goods</p>
           <div className="flex items-center gap-6">
             <span className="inline-flex items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-success" />
-              All systems operational
-            </span>            <a href="mailto:support@sustain.eco" className="transition-colors hover:text-foreground">
+              <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden="true" />
+              Marketplace live
+            </span>
+            <a href="mailto:support@sustain.eco" className="transition-colors hover:text-foreground">
               support@sustain.eco
             </a>
             <Link to="/faq" className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground">
@@ -76,6 +107,7 @@ export const Navigation = () => {
             <Link
               key={link.to}
               to={link.to}
+              aria-current={isActive(link.to) ? "page" : undefined}
               className={cn(
                 "relative rounded-md px-3 py-2 text-sm font-medium transition-colors",
                 isActive(link.to) ? "text-foreground" : "text-muted-foreground hover:text-foreground",
@@ -149,7 +181,7 @@ export const Navigation = () => {
               <Button asChild variant="ghost" size="sm" className="hidden md:inline-flex">
                 <Link to="/auth">Sign in</Link>
               </Button>
-              <Button asChild>
+              <Button asChild className="hidden sm:inline-flex">
                 <Link to="/create-listing">
                   <Plus className="h-4 w-4" />
                   List an item
@@ -158,96 +190,80 @@ export const Navigation = () => {
             </>
           )}
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            onClick={() => setMobileOpen((open) => !open)}
-            aria-label={mobileOpen ? "Close menu" : "Open menu"}
-            aria-expanded={mobileOpen}
-          >
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </Button>
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-88 max-w-[85vw] overflow-y-auto p-0 sm:max-w-sm">
+              <SheetHeader className="border-b border-border p-4 text-left">
+                <SheetTitle className="text-sm font-semibold">Menu</SheetTitle>
+              </SheetHeader>
+
+              <nav aria-label="Mobile" className="flex flex-col gap-1 p-4">
+                {primaryLinks.map((link) => (
+                  <Link
+                    key={link.to}
+                    to={link.to}
+                    onClick={() => setMobileOpen(false)}
+                    aria-current={isActive(link.to) ? "page" : undefined}
+                    className={cn(
+                      "rounded-md px-3 py-3 text-sm font-medium transition-colors",
+                      isActive(link.to) ? "bg-secondary text-foreground" : "text-muted-foreground",
+                    )}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+
+                <div className="my-3 h-px bg-border" />
+
+                {user ? (
+                  <div className="flex flex-col gap-1">
+                    <div className="truncate px-3 pb-2 text-xs text-muted-foreground">{user.email}</div>
+                    <MobileLink to="/wallet" onNavigate={closeMenu} icon={Wallet} label="Wallet" />
+                    <MobileLink to="/my-orders" onNavigate={closeMenu} icon={ShoppingBag} label="Orders" />
+                    {isAffiliate && (
+                      <MobileLink
+                        to="/affiliate-dashboard"
+                        onNavigate={closeMenu}
+                        icon={BarChart3}
+                        label="Affiliate reporting"
+                      />
+                    )}
+                    <MobileLink to="/create-listing" onNavigate={closeMenu} icon={Package} label="List an item" />
+                    <button
+                      onClick={handleSignOut}
+                      className="flex items-center gap-3 rounded-md px-3 py-3 text-left text-sm font-medium text-destructive"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sign out
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    <Button asChild variant="outline" className="w-full">
+                      <Link to="/auth" onClick={closeMenu}>
+                        Sign in
+                      </Link>
+                    </Button>
+                    <Button asChild className="w-full">
+                      <Link to="/create-listing" onClick={closeMenu}>
+                        <Plus className="h-4 w-4" />
+                        List an item
+                      </Link>
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      Accounts are free. No listing fees to get started.
+                    </p>
+                  </div>
+                )}
+              </nav>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
-
-      {mobileOpen && (
-        <div className="border-t border-border bg-card md:hidden">
-          <nav aria-label="Mobile" className="container flex flex-col py-4">
-            {primaryLinks.map((link) => (
-              <Link
-                key={link.to}
-                to={link.to}
-                onClick={() => setMobileOpen(false)}
-                className={cn(
-                  "rounded-md px-2 py-3 text-sm font-medium transition-colors",
-                  isActive(link.to) ? "bg-secondary text-foreground" : "text-muted-foreground",
-                )}
-              >
-                {link.label}
-              </Link>
-            ))}
-
-            <div className="my-3 h-px bg-border" />
-
-            {user ? (
-              <div className="flex flex-col gap-1">
-                <div className="px-2 pb-2 text-xs text-muted-foreground">{user.email}</div>
-                <Link
-                  to="/wallet"
-                  onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 rounded-md px-2 py-3 text-sm font-medium text-muted-foreground"
-                >
-                  <Wallet className="h-4 w-4" />
-                  Wallet
-                </Link>
-                <Link
-                  to="/my-orders"
-                  onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 rounded-md px-2 py-3 text-sm font-medium text-muted-foreground"
-                >
-                  <ShoppingBag className="h-4 w-4" />
-                  Orders
-                </Link>
-                {isAffiliate && (
-                  <Link
-                    to="/affiliate-dashboard"
-                    onClick={() => setMobileOpen(false)}
-                    className="flex items-center gap-3 rounded-md px-2 py-3 text-sm font-medium text-muted-foreground"
-                  >
-                    <BarChart3 className="h-4 w-4" />
-                    Affiliate reporting
-                  </Link>
-                )}
-                <Link
-                  to="/create-listing"
-                  onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 rounded-md px-2 py-3 text-sm font-medium text-muted-foreground"
-                >
-                  <Package className="h-4 w-4" />
-                  List an item
-                </Link>
-                <button
-                  onClick={handleSignOut}
-                  className="flex items-center gap-3 rounded-md px-2 py-3 text-left text-sm font-medium text-destructive"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Sign out
-                </button>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3 px-2">
-                <Button asChild variant="outline">
-                  <Link to="/auth" onClick={() => setMobileOpen(false)}>
-                    Sign in
-                  </Link>
-                </Button>
-                <p className="text-xs text-muted-foreground">Accounts are free. No listing fees to get started.</p>
-              </div>
-            )}
-          </nav>
-        </div>
-      )}
     </header>
   );
 };

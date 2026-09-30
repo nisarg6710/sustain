@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { useWishlist } from "@/hooks/useWishlist";
-import { conditionVariant, formatCategory, formatCondition, formatDate } from "@/lib/format";
+import { conditionVariant, formatCategory, formatCondition, formatDate, formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export interface ListingSummary {
@@ -21,21 +21,24 @@ export interface ListingSummary {
 export const ListingThumbnail = ({
   photo,
   title,
+  decorative = false,
   className,
 }: {
   photo?: string | null;
   title: string;
+  /** Set when the title is rendered next to the image, to avoid announcing it twice. */
+  decorative?: boolean;
   className?: string;
 }) => {
   if (!photo) {
     return (
       <div className={cn("flex items-center justify-center bg-secondary text-muted-foreground", className)}>
-        <ImageOff className="h-5 w-5" />
+        <ImageOff className="h-5 w-5" aria-hidden="true" />
       </div>
     );
   }
 
-  return <img src={photo} alt={title} loading="lazy" className={cn("object-cover", className)} />;
+  return <img src={photo} alt={decorative ? "" : title} loading="lazy" className={cn("object-cover", className)} />;
 };
 
 /** Wishlist toggle. Sits outside the card's <Link> to keep the markup valid. */
@@ -85,25 +88,31 @@ export const EcoCoinAmount = ({
 }) => (
   <span className={cn("inline-flex items-baseline gap-1 font-semibold tabular-nums text-foreground", className)}>
     {size === "lg" ? (
-      <span className="text-3xl">{value}</span>
+      <span className="text-3xl">{formatNumber(value)}</span>
     ) : size === "sm" ? (
-      <span className="text-sm">{value}</span>
+      <span className="text-sm">{formatNumber(value)}</span>
     ) : (
-      <span className="text-lg">{value}</span>
+      <span className="text-lg">{formatNumber(value)}</span>
     )}
     <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">EC</span>
   </span>
 );
 
 export const ListingCard = ({ listing }: { listing: ListingSummary }) => (
-  <Card className="group relative overflow-hidden transition-all hover:border-primary/30 hover:shadow-md">
+  // `overflow-hidden` would clip the global focus ring, so the ring is drawn
+  // inside the card via focus-within instead.
+  <Card className="group relative overflow-hidden transition-all hover:border-primary/30 hover:shadow-md focus-within:ring-2 focus-within:ring-ring focus-within:ring-inset">
     <WishlistButton id={listing.id} title={listing.title} className="absolute right-3 top-3 z-10" />
 
-    <Link to={`/product/${listing.id}`} className="flex h-full flex-col">
+    <Link
+      to={`/product/${listing.id}`}
+      className="flex h-full flex-col rounded-lg focus-visible:outline-none"
+    >
       <div className="relative aspect-[4/3] w-full overflow-hidden border-b border-border bg-secondary">
         <ListingThumbnail
           photo={listing.photos?.[0]}
           title={listing.title}
+          decorative
           className="h-full w-full transition-transform duration-300 group-hover:scale-[1.04]"
         />
         <div className="absolute left-3 top-3">
@@ -114,17 +123,15 @@ export const ListingCard = ({ listing }: { listing: ListingSummary }) => (
       </div>
 
       <div className="flex flex-1 flex-col p-5">
-        <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-          {formatCategory(listing.category)}
-        </p>
-        <h3 className="mt-2 line-clamp-2 text-[15px] font-semibold leading-snug text-foreground">
+        <p className="eyebrow-muted">{formatCategory(listing.category)}</p>
+        <h3 className="mt-2 line-clamp-2 text-card-title font-semibold leading-snug text-foreground">
           {listing.title}
         </h3>
         <div className="mt-auto flex items-end justify-between gap-3 pt-5">
           <EcoCoinAmount value={listing.price_ecocoins} />
           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
             {formatDate(listing.created_at)}
-            <ArrowUpRight className="h-3.5 w-3.5 -translate-x-1 opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100" />
+            <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
           </span>
         </div>
       </div>

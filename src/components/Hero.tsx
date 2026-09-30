@@ -72,7 +72,7 @@ export const Hero = () => (
             .
           </h1>
 
-          <p className="mt-6 max-w-xl text-[17px] leading-relaxed text-muted-foreground">
+          <p className="mt-6 max-w-xl text-lede leading-relaxed text-muted-foreground">
             Sustain settles pre-owned inventory through audited escrow, AI-assisted valuation and a verified
             EcoCoin ledger — giving brands, retailers and marketplaces a compliant route to circular revenue.
           </p>
@@ -112,7 +112,7 @@ export const Hero = () => (
           <div className="animate-fade-up rounded-lg border border-border bg-card/85 p-6 shadow-lg backdrop-blur">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <p className="eyebrow-muted">
                   Network overview
                 </p>
                 <p className="mt-1 text-lg font-semibold tracking-tight text-foreground">Settlement summary</p>
@@ -141,8 +141,10 @@ export const Hero = () => (
 
             <div className="flex items-center justify-between gap-4 text-xs text-muted-foreground">
               <span>Reporting period: last 30 days</span>
-              <Link to="/affiliate-dashboard" className="font-medium text-primary hover:underline">
-                View reporting
+              {/* Partner reporting is gated; sending everyone here lands on a
+                  wall. Point non-partners at the public explainer instead. */}
+              <Link to="/how-it-works" className="font-medium text-primary hover:underline">
+                How reporting works
               </Link>
             </div>
           </div>

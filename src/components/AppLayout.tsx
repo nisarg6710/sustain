@@ -23,7 +23,7 @@ export const AppLayout = ({
       Skip to content
     </a>
     <Navigation />
-    <main id="main-content" className="flex-1">
+    <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">
       {contained ? <div className={cn("container py-8 md:py-10", contentClassName)}>{children}</div> : children}
     </main>
     <Footer />

@@ -183,9 +183,13 @@ const Marketplace = () => {
         }
         meta={
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline" className="tabular-nums">
-              {loading ? "Loading inventory" : `${filteredListings.length} of ${listings.length} listings`}
-            </Badge>
+            {/* The count changes on every keystroke; announce it politely so
+                screen-reader users get feedback as filters change. */}
+            <div role="status" aria-live="polite">
+              <Badge variant="outline" className="tabular-nums">
+                {loading ? "Loading inventory" : `${filteredListings.length} of ${listings.length} listings`}
+              </Badge>
+            </div>
             {savedCount > 0 && (
               <Badge variant="secondary" className="gap-1">
                 <Heart className="h-3 w-3 fill-current" />
@@ -201,7 +205,7 @@ const Marketplace = () => {
         }
       />
 
-      <div className="container py-8">
+      <div className="container py-8 md:py-10">
         <Card className="mb-8 p-4">
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-end">
             <div className="space-y-2">
@@ -294,7 +298,7 @@ const Marketplace = () => {
           </div>
 
           <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-4">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <span className="eyebrow-muted">
               Quick filters
             </span>
             <Button
@@ -395,11 +399,7 @@ const Marketplace = () => {
               </TableHeader>
               <TableBody>
                 {filteredListings.map((listing) => (
-                  <TableRow
-                    key={listing.id}
-                    className="cursor-pointer"
-                    onClick={() => navigate(`/product/${listing.id}`)}
-                  >
+                  <TableRow key={listing.id} className="relative hover:bg-muted/40">
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <ListingThumbnail
@@ -407,7 +407,12 @@ const Marketplace = () => {
                           title={listing.title}
                           className={cn("h-11 w-11 shrink-0 rounded-md border border-border")}
                         />
-                        <span className="line-clamp-1 font-medium text-foreground">{listing.title}</span>
+                        <Link
+                          to={`/product/${listing.id}`}
+                          className="line-clamp-1 font-medium text-foreground after:absolute after:inset-0 after:content-[''] hover:underline focus-visible:underline"
+                        >
+                          {listing.title}
+                        </Link>
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground">{formatCategory(listing.category)}</TableCell>

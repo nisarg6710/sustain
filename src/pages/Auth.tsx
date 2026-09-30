@@ -1,12 +1,18 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, ShieldCheck } from "lucide-react";
+import { Check, MailCheck, ShieldCheck } from "lucide-react";
 
 import { AppLayout } from "@/components/AppLayout";
-import { Brand } from "@/components/Brand";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -50,8 +56,46 @@ const Spinner = () => (
   <span className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
 );
 
+/**
+ * Rendered on both sides of the breakpoint, so only the visible instance is
+ * exposed as the page's <h1> — otherwise mobile would start at an <h3>.
+ */
+const AssurancePanel = ({ className, asHeading = false }: { className?: string; asHeading?: boolean }) => {
+  const Title = asHeading ? "h1" : "p";
+
+  return (
+    <div className={className}>
+      <p className="eyebrow">Account access</p>
+      <Title className="mt-3 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+        One account for buying, selling and settlement
+      </Title>
+      <p className="mt-4 max-w-md text-lede leading-relaxed text-muted-foreground">
+        Register once to publish listings, hold EcoCoins in your wallet and manage orders across the circular
+        marketplace.
+      </p>
+
+      <ul className="mt-8 space-y-3">
+        {assurancePoints.map((point) => (
+          <li key={point} className="flex items-start gap-3 text-sm text-muted-foreground">
+            <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            {point}
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-10 hidden items-center gap-3 rounded-lg border border-border bg-secondary/40 p-4 lg:flex">
+        <ShieldCheck className="h-5 w-5 shrink-0 text-primary" />
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          Accounts are free. No listing fees, no monthly subscription. You are only charged a transaction fee on
+          completed sales.
+        </p>
+      </div>
+    </div>
+  );
+};
+
 const Auth = () => {
-  const { user, signIn, signUp, signInWithProvider, loading } = useAuth();
+  const { user, signIn, signUp, signInWithProvider, resetPassword, loading } = useAuth();
   const navigate = useNavigate();
 
   const [signInEmail, setSignInEmail] = useState("");
@@ -63,12 +107,41 @@ const Auth = () => {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<"google" | "facebook" | null>(null);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetSending, setResetSending] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user && !loading) navigate("/");
   }, [user, loading, navigate]);
 
   const passwordsMismatch = confirmPassword.length > 0 && signUpPassword !== confirmPassword;
+
+  const openReset = () => {
+    setResetEmail(signInEmail);
+    setResetSent(false);
+    setResetError(null);
+    setResetOpen(true);
+  };
+
+  const handleReset = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!resetEmail) return;
+
+    setResetSending(true);
+    setResetError(null);
+    const { error } = await resetPassword(resetEmail);
+    setResetSending(false);
+
+    if (error) {
+      setResetError(error.message);
+      return;
+    }
+
+    setResetSent(true);
+  };
 
   const handleOAuth = async (provider: "google" | "facebook") => {
     setOauthLoading(provider);
@@ -107,36 +180,12 @@ const Auth = () => {
     <AppLayout>
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:gap-16">
         <aside className="hidden lg:block">
-          <p className="eyebrow">Account access</p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground">
-            One account for buying, selling and settlement
-          </h1>
-          <p className="mt-4 max-w-md text-[15px] leading-relaxed text-muted-foreground">
-            Register once to publish listings, hold EcoCoins in your wallet and manage orders across the circular
-            marketplace.
-          </p>
-
-          <ul className="mt-8 space-y-3">
-            {assurancePoints.map((point) => (
-              <li key={point} className="flex items-start gap-3 text-sm text-muted-foreground">
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                {point}
-              </li>
-            ))}
-          </ul>
-
-          <div className="mt-10 flex items-center gap-3 rounded-lg border border-border bg-secondary/40 p-4">
-            <ShieldCheck className="h-5 w-5 shrink-0 text-primary" />
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              Accounts are free. No listing fees, no monthly subscription. You are only charged a transaction fee on
-              completed sales.
-            </p>
-          </div>
+          <AssurancePanel asHeading />
         </aside>
 
         <div className="mx-auto w-full max-w-md">
           <div className="lg:hidden">
-            <Brand className="justify-center" />
+            <AssurancePanel className="mb-8" />
           </div>
 
           <div className="mt-6 space-y-3 lg:mt-0">
@@ -164,7 +213,7 @@ const Auth = () => {
 
           <div className="my-6 flex items-center gap-4">
             <Separator className="flex-1" />
-            <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+            <span className="eyebrow-muted">
               or use email
             </span>
             <Separator className="flex-1" />
@@ -200,7 +249,11 @@ const Auth = () => {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label htmlFor="signin-password">Password</Label>
-                        <button type="button" className="text-xs font-medium text-primary hover:underline">
+                        <button
+                          type="button"
+                          onClick={openReset}
+                          className="text-xs font-medium text-primary hover:underline focus-visible:underline"
+                        >
                           Forgot password?
                         </button>
                       </div>
@@ -283,6 +336,7 @@ const Auth = () => {
                           autoComplete="new-password"
                           value={confirmPassword}
                           onChange={(event) => setConfirmPassword(event.target.value)}
+                          aria-invalid={passwordsMismatch ? true : undefined}
                           required
                           minLength={6}
                         />
@@ -290,7 +344,9 @@ const Auth = () => {
                     </div>
 
                     {passwordsMismatch && (
-                      <p className="text-xs text-destructive">Passwords do not match.</p>
+                      <p role="alert" className="text-xs text-destructive">
+                        Passwords do not match.
+                      </p>
                     )}
 
                     <div className="flex items-start gap-2">
@@ -323,6 +379,59 @@ const Auth = () => {
           </p>
         </div>
       </div>
+
+      <Dialog open={resetOpen} onOpenChange={setResetOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reset your password</DialogTitle>
+            <DialogDescription>
+              Enter the email address on your account and we will send a link to set a new password.
+            </DialogDescription>
+          </DialogHeader>
+
+          {resetSent ? (
+            <div className="space-y-4">
+              <p className="flex items-start gap-3 rounded-md border border-border bg-secondary/40 p-4 text-sm text-muted-foreground">
+                <MailCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                If an account exists for {resetEmail}, a reset link is on its way. The link expires in one hour.
+              </p>
+              <Button className="w-full" variant="outline" onClick={() => setResetOpen(false)}>
+                Back to sign in
+              </Button>
+            </div>
+          ) : (
+            <form onSubmit={handleReset} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="reset-email">Work email</Label>
+                <Input
+                  id="reset-email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@company.com"
+                  value={resetEmail}
+                  onChange={(event) => setResetEmail(event.target.value)}
+                  aria-invalid={resetError ? true : undefined}
+                  aria-describedby={resetError ? "reset-email-error" : undefined}
+                  required
+                />
+                {resetError && (
+                  <p id="reset-email-error" role="alert" className="text-xs text-destructive">
+                    {resetError}
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <Button type="button" variant="outline" onClick={() => setResetOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={resetSending}>
+                  {resetSending ? "Sending…" : "Send reset link"}
+                </Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 };

@@ -333,7 +333,7 @@ const CreateListing = () => {
                       type="button"
                       onClick={() => setPhotos((prev) => prev.filter((_, i) => i !== index))}
                       aria-label={`Remove photo ${index + 1}`}
-                      className="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-card/90 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100 focus-visible:opacity-100"
+                      className="absolute right-2 top-2 inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-card/90 text-muted-foreground transition-colors hover:text-destructive focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -550,9 +550,7 @@ const CreateListing = () => {
               ) : (
                 <>
                   <div className="rounded-md border border-border bg-secondary/40 p-4">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      Recommended price
-                    </p>
+                    <p className="eyebrow-muted">Recommended price</p>
                     <p className="mt-1 text-3xl font-semibold tabular-nums text-foreground">
                       {valuation.ecoCoins}
                       <span className="ml-1.5 text-sm font-medium text-muted-foreground">EC</span>
@@ -561,9 +559,7 @@ const CreateListing = () => {
 
                   {valuation.justification && (
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Rationale
-                      </p>
+                      <p className="eyebrow-muted">Rationale</p>
                       <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
                         {valuation.justification}
                       </p>
@@ -576,12 +572,18 @@ const CreateListing = () => {
                     <div className="flex items-center justify-between">
                       <dt className="text-muted-foreground">Carbon offset</dt>
                       <dd className="font-medium tabular-nums text-foreground">
-                        +{valuation.carbonOffset ?? 12} kg CO₂e
+                        {/* No invented default: an absent figure is reported as
+                            unavailable rather than shown as a measured 12 kg. */}
+                        {valuation.carbonOffset != null
+                          ? `+${valuation.carbonOffset} kg CO₂e`
+                          : "Not available"}
                       </dd>
                     </div>
                     <div className="flex items-center justify-between">
                       <dt className="text-muted-foreground">Waste diverted</dt>
-                      <dd className="font-medium text-foreground">{valuation.wasteReduction ?? "High"}</dd>
+                      <dd className="font-medium text-foreground">
+                        {valuation.wasteReduction ?? "Not available"}
+                      </dd>
                     </div>
                   </dl>
 

@@ -253,13 +253,22 @@
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
+      /* Reveal children carry a stagger delay; without resetting it they stay
+         invisible for up to 180ms after intersection. */
+      transition-delay: 0ms !important;
     }
   }
 }
 
 @layer components {
+  /* Section eyebrows. One definition, so the 11px/12px split that had
+     accumulated across pages cannot drift further. */
   .eyebrow {
     @apply text-xs font-semibold uppercase tracking-[0.16em] text-primary;
+  }
+
+  .eyebrow-muted {
+    @apply text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground;
   }
 
   .surface-grid {

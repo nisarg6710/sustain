@@ -33,13 +33,15 @@ export const PageHeader = ({
           <ol className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
             {breadcrumbs.map((crumb, index) => (
               <li key={`${crumb.label}-${index}`} className="flex items-center gap-1.5">
-                {index > 0 && <ChevronRight className="h-3 w-3 text-muted-foreground/50" />}
+                {index > 0 && <ChevronRight className="h-3 w-3 text-muted-foreground/50" aria-hidden="true" />}
                 {crumb.to ? (
                   <Link to={crumb.to} className="transition-colors hover:text-foreground">
                     {crumb.label}
                   </Link>
                 ) : (
-                  <span className="font-medium text-foreground">{crumb.label}</span>
+                  <span aria-current="page" className="font-medium text-foreground">
+                    {crumb.label}
+                  </span>
                 )}
               </li>
             ))}
@@ -51,7 +53,7 @@ export const PageHeader = ({
         <div className="max-w-2xl">
           {eyebrow && <p className="eyebrow mb-2">{eyebrow}</p>}
           <h1 className="text-3xl font-semibold tracking-tightest text-foreground md:text-4xl">{title}</h1>
-          {description && <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">{description}</p>}
+          {description && <p className="mt-3 text-lede leading-relaxed text-muted-foreground">{description}</p>}
           {meta && <div className="mt-4">{meta}</div>}
         </div>
         {actions && <div className="flex shrink-0 flex-wrap items-center gap-3">{actions}</div>}

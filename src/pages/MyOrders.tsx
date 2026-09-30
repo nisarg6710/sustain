@@ -25,6 +25,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -71,6 +81,250 @@ const ORDER_COLUMNS = `
   listings (title, photos)
 `;
 
+/**
+ * Actions for a single order. Only the order being acted on should show
+ * in-flight state, so this is driven by `activeOrderId` rather than a
+ * page-wide boolean.
+ */
+const OrderActions = ({
+  order,
+  isSeller,
+  trackingNumber,
+  onTrackingChange,
+  onConfirmDelivery,
+  onDispatched,
+  confirming,
+}: {
+  order: Order;
+  isSeller: boolean;
+  trackingNumber: string;
+  onTrackingChange: (value: string) => void;
+  onConfirmDelivery: () => void;
+  onDispatched: () => void;
+  confirming: boolean;
+}) => {
+  if (isSeller && order.status === "pending") {
+    return (
+      <Dialog onOpenChange={(open) => !open && onTrackingChange("")}>
+        <DialogTrigger asChild>
+          <Button size="xs" variant="outline" className="w-full sm:w-auto">
+            <Truck className="h-3.5 w-3.5" />
+            Mark dispatched
+          </Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Record dispatch</DialogTitle>
+            <DialogDescription>
+              Enter the carrier tracking reference for order {order.id.slice(0, 8)}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor={`tracking-${order.id}`}>Tracking number</Label>
+            <Input
+              id={`tracking-${order.id}`}
+              value={trackingNumber}
+              onChange={(event) => onTrackingChange(event.target.value)}
+              placeholder="e.g. 1Z999AA10123456784"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={onTrackingChange.bind(null, "")}>
+              Cancel
+            </Button>
+            <Button onClick={onDispatched}>Confirm dispatch</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (!isSeller && order.status === "shipped") {
+    return (
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button size="xs" className="w-full sm:w-auto">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            {confirming ? "Confirming…" : "Confirm delivery"}
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm you received this item</AlertDialogTitle>
+            <AlertDialogDescription>
+              This releases the escrowed {order.amount_ecocoins} EcoCoins to the seller and cannot be undone. Only
+              confirm once the item is in your hands.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={confirming}>Not yet</AlertDialogCancel>
+            <Button onClick={onConfirmDelivery} disabled={confirming}>
+              {confirming ? "Confirming…" : "Release payment"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    );
+  }
+
+  if (isSeller && order.status === "shipped") {
+    return <span className="text-xs text-muted-foreground">Awaiting buyer</span>;
+  }
+
+  if (order.status === "completed") {
+    return <span className="text-xs text-muted-foreground">Settled</span>;
+  }
+
+  if (order.status === "cancelled") {
+    return <span className="text-xs text-muted-foreground">Closed</span>;
+  }
+
+  return null;
+};
+
+interface OrderListProps {
+  orders: Order[];
+  isSeller: boolean;
+  trackingNumber: string;
+  confirmingId: string | null;
+  onTrackingChange: (value: string) => void;
+  onConfirmDelivery: (orderId: string) => void;
+  onMarkShipped: (orderId: string) => void;
+}
+
+/** Table for md and up. */
+const OrderTable = ({
+  orders,
+  isSeller,
+  trackingNumber,
+  confirmingId,
+  onTrackingChange,
+  onConfirmDelivery,
+  onMarkShipped,
+}: OrderListProps) => (
+  <Card className="hidden overflow-hidden md:block">
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Item</TableHead>
+          <TableHead>Reference</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead className="text-right">Value</TableHead>
+          <TableHead>Ordered</TableHead>
+          <TableHead className="text-right">Action</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {orders.map((order) => (
+          <TableRow key={order.id}>
+            <TableCell>
+              <div className="flex items-center gap-3">
+                <ListingThumbnail
+                  photo={order.listings?.photos?.[0]}
+                  title={order.listings?.title ?? "Item"}
+                  className="h-11 w-11 shrink-0 rounded-md border border-border"
+                />
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-foreground">
+                    {order.listings?.title ?? "Item unavailable"}
+                  </p>
+                  {order.tracking_number && (
+                    <p className="truncate text-xs text-muted-foreground">Tracking {order.tracking_number}</p>
+                  )}
+                </div>
+              </div>
+            </TableCell>
+            <TableCell className="font-mono text-xs text-muted-foreground">
+              <span title={order.id}>{order.id.slice(0, 8)}</span>
+            </TableCell>
+            <TableCell>
+              <StatusBadge status={order.status} />
+            </TableCell>
+            <TableCell className="text-right">
+              <EcoCoinAmount value={order.amount_ecocoins} size="sm" />
+            </TableCell>
+            <TableCell className="whitespace-nowrap text-muted-foreground">{formatDate(order.created_at)}</TableCell>
+            <TableCell className="text-right">
+              <OrderActions
+                order={order}
+                isSeller={isSeller}
+                trackingNumber={trackingNumber}
+                onTrackingChange={onTrackingChange}
+                onConfirmDelivery={() => onConfirmDelivery(order.id)}
+                onDispatched={() => onMarkShipped(order.id)}
+                confirming={confirmingId === order.id}
+              />
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  </Card>
+);
+
+/** Stacked cards below md, where a 6-column table would push the primary
+    action off-screen behind the horizontal scroller. */
+const OrderCards = ({
+  orders,
+  isSeller,
+  trackingNumber,
+  confirmingId,
+  onTrackingChange,
+  onConfirmDelivery,
+  onMarkShipped,
+}: OrderListProps) => (
+  <div className="space-y-3 md:hidden">
+    {orders.map((order) => (
+      <Card key={order.id} className="p-4">
+        <div className="flex items-start gap-3">
+          <ListingThumbnail
+            photo={order.listings?.photos?.[0]}
+            title={order.listings?.title ?? "Item"}
+            className="h-12 w-12 shrink-0 rounded-md border border-border"
+          />
+          <div className="min-w-0 flex-1">
+            <p className="line-clamp-2 font-medium text-foreground">
+              {order.listings?.title ?? "Item unavailable"}
+            </p>
+            <p className="mt-0.5 font-mono text-xs text-muted-foreground">
+              <span title={order.id}>{order.id.slice(0, 8)}</span>
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+          <StatusBadge status={order.status} />
+          <EcoCoinAmount value={order.amount_ecocoins} size="sm" />
+        </div>
+
+        <p className="mt-2 text-xs text-muted-foreground">
+          Ordered {formatDate(order.created_at)}
+          {order.tracking_number && ` · Tracking ${order.tracking_number}`}
+        </p>
+
+        <div className="mt-3 border-t border-border pt-3">
+          <OrderActions
+            order={order}
+            isSeller={isSeller}
+            trackingNumber={trackingNumber}
+            onTrackingChange={onTrackingChange}
+            onConfirmDelivery={() => onConfirmDelivery(order.id)}
+            onDispatched={() => onMarkShipped(order.id)}
+            confirming={confirmingId === order.id}
+          />
+        </div>
+      </Card>
+    ))}
+  </div>
+);
+
+const OrderList = (props: OrderListProps) => (
+  <>
+    <OrderTable {...props} />
+    <OrderCards {...props} />
+  </>
+);
+
 const MyOrders = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -80,8 +334,7 @@ const MyOrders = () => {
   const [buyerOrders, setBuyerOrders] = useState<Order[]>([]);
   const [sellerOrders, setSellerOrders] = useState<Order[]>([]);
   const [trackingNumber, setTrackingNumber] = useState("");
-  const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
-  const [confirming, setConfirming] = useState(false);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
   const fetchOrders = useCallback(async () => {
     if (!user) return;
@@ -143,12 +396,11 @@ const MyOrders = () => {
     toast({ title: "Order dispatched", description: "The buyer has been notified." });
 
     setTrackingNumber("");
-    setActiveOrderId(null);
     fetchOrders();
   };
 
   const handleConfirmDelivery = async (orderId: string) => {
-    setConfirming(true);
+    setConfirmingId(orderId);
 
     const { data, error } = await supabase.functions.invoke("confirm-delivery", { body: { orderId } });
 
@@ -159,13 +411,13 @@ const MyOrders = () => {
         description: data?.error || (await describeEdgeFunctionError(error, "delivery confirmation")),
         variant: "destructive",
       });
-      setConfirming(false);
+      setConfirmingId(null);
       return;
     }
 
     toast({ title: "Delivery confirmed", description: "Escrow has been released to the seller." });
     burstConfetti({ count: 90, origin: { x: window.innerWidth / 2, y: window.innerHeight * 0.45 } });
-    setConfirming(false);
+    setConfirmingId(null);
     fetchOrders();
   };
 
@@ -176,119 +428,6 @@ const MyOrders = () => {
     return { total: all.length, open: open.length, value };
   }, [buyerOrders, sellerOrders]);
 
-  const OrderTable = ({ orders, isSeller }: { orders: Order[]; isSeller: boolean }) => (
-    <Card className="overflow-hidden">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[32%]">Item</TableHead>
-            <TableHead>Reference</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Value</TableHead>
-            <TableHead>Ordered</TableHead>
-            <TableHead className="text-right">Action</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {orders.map((order) => (
-            <TableRow key={order.id}>
-              <TableCell>
-                <div className="flex items-center gap-3">
-                  <ListingThumbnail
-                    photo={order.listings?.photos?.[0]}
-                    title={order.listings?.title ?? "Item"}
-                    className="h-11 w-11 shrink-0 rounded-md border border-border"
-                  />
-                  <div className="min-w-0">
-                    <p className="truncate font-medium text-foreground">
-                      {order.listings?.title ?? "Item unavailable"}
-                    </p>
-                    {order.tracking_number && (
-                      <p className="truncate text-xs text-muted-foreground">
-                        Tracking {order.tracking_number}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </TableCell>
-              <TableCell className="font-mono text-xs text-muted-foreground">{order.id.slice(0, 8)}</TableCell>
-              <TableCell>
-                <StatusBadge status={order.status} />
-              </TableCell>
-              <TableCell className="text-right">
-                <EcoCoinAmount value={order.amount_ecocoins} size="sm" />
-              </TableCell>
-              <TableCell className="whitespace-nowrap text-muted-foreground">{formatDate(order.created_at)}</TableCell>
-              <TableCell className="text-right">
-                {isSeller && order.status === "pending" && (
-                  <Dialog
-                    open={activeOrderId === order.id}
-                    onOpenChange={(open) => {
-                      setActiveOrderId(open ? order.id : null);
-                      if (!open) setTrackingNumber("");
-                    }}
-                  >
-                    <DialogTrigger asChild>
-                      <Button size="xs" variant="outline">
-                        <Truck className="h-3.5 w-3.5" />
-                        Mark dispatched
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Record dispatch</DialogTitle>
-                        <DialogDescription>
-                          Enter the carrier tracking reference for order {order.id.slice(0, 8)}.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-2">
-                        <Label htmlFor={`tracking-${order.id}`}>Tracking number</Label>
-                        <Input
-                          id={`tracking-${order.id}`}
-                          value={trackingNumber}
-                          onChange={(event) => setTrackingNumber(event.target.value)}
-                          placeholder="e.g. 1Z999AA10123456784"
-                        />
-                      </div>
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setActiveOrderId(null)}>
-                          Cancel
-                        </Button>
-                        <Button onClick={() => handleMarkAsShipped(order.id)}>Confirm dispatch</Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                )}
-
-                {!isSeller && order.status === "shipped" && (
-                  <Button
-                    size="xs"
-                    onClick={() => handleConfirmDelivery(order.id)}
-                    disabled={confirming}
-                  >
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    {confirming ? "Confirming…" : "Confirm delivery"}
-                  </Button>
-                )}
-
-                {isSeller && order.status === "shipped" && (
-                  <span className="text-xs text-muted-foreground">Awaiting buyer</span>
-                )}
-
-                {order.status === "completed" && (
-                  <span className="text-xs text-muted-foreground">Settled</span>
-                )}
-
-                {order.status === "cancelled" && (
-                  <span className="text-xs text-muted-foreground">Closed</span>
-                )}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </Card>
-  );
 
   if (loading) {
     return (
@@ -315,7 +454,7 @@ const MyOrders = () => {
         }
       />
 
-      <div className="container space-y-8 py-8">
+      <div className="container space-y-8 py-8 md:py-10">
         <div className="grid gap-4 sm:grid-cols-3">
           <StatCard label="Total orders" value={stats.total} icon={ShoppingBag} hint="Purchases and sales" />
           <StatCard label="Open orders" value={stats.open} icon={Clock} hint="Awaiting dispatch or delivery" />
@@ -332,15 +471,15 @@ const MyOrders = () => {
           <TabsList>
             <TabsTrigger value="purchases">
               Purchases
-              <span className="ml-2 rounded bg-background px-1.5 text-[11px] tabular-nums text-muted-foreground">
+              <Badge variant="secondary" className="ml-2 tabular-nums">
                 {buyerOrders.length}
-              </span>
+              </Badge>
             </TabsTrigger>
             <TabsTrigger value="sales">
               Sales
-              <span className="ml-2 rounded bg-background px-1.5 text-[11px] tabular-nums text-muted-foreground">
+              <Badge variant="secondary" className="ml-2 tabular-nums">
                 {sellerOrders.length}
-              </span>
+              </Badge>
             </TabsTrigger>
           </TabsList>
 
@@ -357,7 +496,15 @@ const MyOrders = () => {
                 }
               />
             ) : (
-              <OrderTable orders={buyerOrders} isSeller={false} />
+              <OrderList
+                orders={buyerOrders}
+                isSeller={false}
+                trackingNumber={trackingNumber}
+                confirmingId={confirmingId}
+                onTrackingChange={setTrackingNumber}
+                onConfirmDelivery={handleConfirmDelivery}
+                onMarkShipped={handleMarkAsShipped}
+              />
             )}
           </TabsContent>
 
@@ -374,7 +521,15 @@ const MyOrders = () => {
                 }
               />
             ) : (
-              <OrderTable orders={sellerOrders} isSeller />
+              <OrderList
+                orders={sellerOrders}
+                isSeller
+                trackingNumber={trackingNumber}
+                confirmingId={confirmingId}
+                onTrackingChange={setTrackingNumber}
+                onConfirmDelivery={handleConfirmDelivery}
+                onMarkShipped={handleMarkAsShipped}
+              />
             )}
           </TabsContent>
         </Tabs>

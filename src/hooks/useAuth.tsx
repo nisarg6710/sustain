@@ -12,6 +12,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signInWithProvider: (provider: OAuthProvider) => Promise<{ error: AuthError | null }>;
+  resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
   loading: boolean;
 }
@@ -116,6 +117,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const resetPassword = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+
+      if (error) {
+        return { error };
+      }
+
+      // Deliberately no success toast: confirming which emails exist would leak
+      // account membership. The Auth page shows a neutral confirmation instead.
+      return { error: null };
+    } catch (error) {
+      return { error: error as AuthError };
+    }
+  };
+
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -131,7 +150,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, signUp, signIn, signInWithProvider, signOut, loading }}>
+    <AuthContext.Provider value={{ user, session, signUp, signIn, signInWithProvider, resetPassword, signOut, loading }}>
       {children}
     </AuthContext.Provider>
   );

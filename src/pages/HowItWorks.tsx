@@ -102,7 +102,7 @@ const HowItWorks = () => (
       }
     />
 
-    <div className="container space-y-16 py-12">
+    <div className="container space-y-16 py-8 md:py-10">
       <section>
         <SectionHeading
           eyebrow="Four stages"
@@ -113,7 +113,7 @@ const HowItWorks = () => (
         <ol className="mt-10 space-y-px overflow-hidden rounded-lg border border-border bg-border">
           {steps.map((step) => (
             <li key={step.step}>
-              <Card className="rounded-none border-0 bg-card shadow-none">
+              <Card variant="bare" className="h-full">
                 <CardContent className="grid gap-6 p-6 lg:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)] lg:gap-10 lg:p-8">
                   <div className="flex items-center gap-3 lg:block">
                     <span className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-primary text-sm font-semibold tabular-nums text-primary-foreground">
@@ -151,10 +151,10 @@ const HowItWorks = () => (
 
         <div className="mt-10 grid gap-px overflow-hidden rounded-lg border border-border bg-border md:grid-cols-3">
           {controls.map((control) => (
-            <Card key={control.title} className="rounded-none border-0 bg-card shadow-none">
+            <Card key={control.title} variant="bare">
               <CardContent className="p-6">
                 <control.icon className="h-5 w-5 text-primary" />
-                <h3 className="mt-4 text-[15px] font-semibold text-foreground">{control.title}</h3>
+                <h3 className="mt-4 text-card-title font-semibold text-foreground">{control.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{control.body}</p>
               </CardContent>
             </Card>
@@ -171,7 +171,7 @@ const HowItWorks = () => (
                 <h2 className="mt-4 text-2xl font-semibold tracking-tight text-foreground">
                   Publish your first listing
                 </h2>
-                <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
+                <p className="mt-3 text-lede leading-relaxed text-muted-foreground">
                   Registration is free and there are no listing fees. The valuation service will suggest a price once
                   your media and attributes are in place.
                 </p>

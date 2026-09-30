@@ -51,7 +51,7 @@ export const HowItWorks = () => (
               <span className="h-px flex-1 bg-border" aria-hidden="true" />
               <step.icon className="h-4 w-4 text-muted-foreground" />
             </div>
-            <h3 className="mt-5 text-[15px] font-semibold text-foreground">{step.title}</h3>
+            <h3 className="mt-5 text-card-title font-semibold text-foreground">{step.title}</h3>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{step.body}</p>
           </Reveal>
         ))}

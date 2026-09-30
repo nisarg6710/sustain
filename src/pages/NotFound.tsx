@@ -17,8 +17,11 @@ const NotFound = () => {
     <AppLayout>
       <Card className="mx-auto max-w-2xl">
         <CardContent className="flex flex-col items-center p-10 text-center">
-          <p className="text-5xl font-semibold tabular-nums tracking-tight text-foreground">404</p>
-          <h1 className="mt-4 text-xl font-semibold text-foreground">Page not found</h1>
+          {/* Decorative: the real page heading is the message below. */}
+          <p className="text-5xl font-semibold tabular-nums tracking-tight text-muted-foreground/40" aria-hidden="true">
+            404
+          </p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">Page not found</h1>
           <p className="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
             The page you requested does not exist or has been moved. Check the address, or continue from one of the
             links below.
