@@ -50,6 +50,72 @@
 
   <body>
     <div id="root"></div>
+    <script>
+      // Trap a failure that happens BEFORE React exists.
+      //
+      // A module-graph error — a bad chunk, a circular import, anything thrown
+      // while a chunk is evaluated — kills the page before any React error
+      // boundary is mounted, so the visitor gets a blank screen and the reason
+      // exists only in a console they have no reason to open. That is exactly
+      // how the last outage presented: an unexplained black page.
+      (function () {
+        var shown = false;
+
+        function report(detail) {
+          if (shown) return;
+          shown = true;
+
+          var root = document.getElementById("root");
+          // Only speak up if nothing rendered; a late error must not overwrite a
+          // page that is already working.
+          if (!root || root.childElementCount > 0) return;
+
+          var wrap = document.createElement("div");
+          wrap.setAttribute("role", "alert");
+          wrap.style.cssText =
+            "min-height:100vh;display:flex;align-items:center;justify-content:center;" +
+            "padding:4rem 1.5rem;font:400 15px/1.65 system-ui,-apple-system,sans-serif;" +
+            "background:#0c1a16;color:#e9f1ed";
+
+          var inner = document.createElement("div");
+          inner.style.cssText = "max-width:34rem";
+
+          var heading = document.createElement("h1");
+          heading.textContent = "This deployment failed to start";
+          heading.style.cssText = "font-size:1.5rem;font-weight:600;margin:0 0 .75rem;letter-spacing:-.01em";
+
+          var body = document.createElement("p");
+          body.textContent =
+            "The app's JavaScript failed before it could render. This is a build or deployment problem, " +
+            "not a problem with your browser. The details below are what the browser reported.";
+          body.style.cssText = "margin:0 0 1.25rem;opacity:.78";
+
+          var pre = document.createElement("pre");
+          pre.textContent = detail;
+          pre.style.cssText =
+            "white-space:pre-wrap;overflow:auto;max-height:12rem;padding:.75rem;" +
+            "border:1px solid rgba(255,255,255,.16);border-radius:.375rem;font-size:12px;opacity:.82";
+
+          inner.appendChild(heading);
+          inner.appendChild(body);
+          inner.appendChild(pre);
+          wrap.appendChild(inner);
+          root.appendChild(wrap);
+        }
+
+        window.addEventListener("error", function (event) {
+          // A failed <img>/<script> load also fires "error", but carries a target
+          // element and no message. Only script-level failures are interesting.
+          if (event && event.target && event.target !== window && event.target.nodeName) return;
+          report((event && (event.message || (event.error && event.error.message))) || "Unknown script error");
+        });
+
+        window.addEventListener("unhandledrejection", function (event) {
+          var reason = event && event.reason;
+          report((reason && reason.message) || String(reason));
+        });
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

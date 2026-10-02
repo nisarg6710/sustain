@@ -15,24 +15,25 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // No build.rollupOptions.manualChunks here on purpose.
+  //
+  // Grouping vendors by hand is what removed the >500 kB chunk warning, but it
+  // introduced a hard runtime failure: the catch-all bucket created a circular
+  // dependency between chunks, and the browser died with
+  // "Uncaught ReferenceError: Cannot access '_' before initialization" at module
+  // evaluation — a blank page, before React ever mounted.
+  //
+  // Rollup can only order chunks safely if it derives the grouping itself. The
+  // per-route `React.lazy` splitting in src/App.tsx already produces correct
+  // shared chunks, so leave the grouping to it. If the warning returns, raise
+  // `chunkSizeWarningLimit` rather than hand-splitting vendors.
   build: {
-    rollupOptions: {
-      output: {
-        // Routes are already lazy, but the shared vendor code was landing in one
-        // 566 kB chunk that every route paid for. Grouping by package lets a
-        // visitor's first paint skip the data-grid and charting libraries
-        // entirely, and lets unchanged vendor code stay cached across deploys.
-        // Order matters: @radix-ui and recharts both contain "react".
-        manualChunks(id) {
-          if (!id.includes("node_modules")) return undefined;
-          if (id.includes("@supabase")) return "supabase";
-          if (id.includes("@radix-ui") || id.includes("radix-ui")) return "radix";
-          if (id.includes("recharts") || id.includes("victory-vendor") || id.includes("d3-")) return "recharts";
-          if (id.includes("@tanstack")) return "tanstack";
-          if (id.includes("react")) return "react";
-          return "vendor";
-        },
-      },
-    },
+    // The entry chunk is React, the Supabase client and the UI primitives every
+    // route shares, so it is downloaded on every page by definition. Vite's
+    // default advice ("split it up") does not apply to code that cannot be
+    // deferred. The charting library is already out of it — that lives in the
+    // lazy /affiliate-dashboard chunk.
+    chunkSizeWarningLimit: 600,
   },
 }));
+
