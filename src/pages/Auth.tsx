@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Check, MailCheck, ShieldCheck } from "lucide-react";
 
 import { AppLayout } from "@/components/AppLayout";
@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
+import { readNextPath } from "@/lib/authRedirect";
 
 const assurancePoints = [
   "Escrow-protected settlement on every order",
@@ -97,6 +98,11 @@ const AssurancePanel = ({ className, asHeading = false }: { className?: string; 
 const Auth = () => {
   const { user, signIn, signUp, signInWithProvider, resetPassword, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Where the visitor was intercepted. Signed-in users are returned there so an
+  // auth gate never costs them the action they were in the middle of.
+  const nextPath = readNextPath(location.search);
 
   const [signInEmail, setSignInEmail] = useState("");
   const [signInPassword, setSignInPassword] = useState("");
@@ -114,8 +120,8 @@ const Auth = () => {
   const [resetError, setResetError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user && !loading) navigate("/");
-  }, [user, loading, navigate]);
+    if (user && !loading) navigate(nextPath ?? "/", { replace: true });
+  }, [user, loading, navigate, nextPath]);
 
   const passwordsMismatch = confirmPassword.length > 0 && signUpPassword !== confirmPassword;
 
@@ -145,7 +151,7 @@ const Auth = () => {
 
   const handleOAuth = async (provider: "google" | "facebook") => {
     setOauthLoading(provider);
-    const { error } = await signInWithProvider(provider);
+    const { error } = await signInWithProvider(provider, nextPath ?? undefined);
     if (error) setOauthLoading(null);
   };
 
@@ -187,6 +193,17 @@ const Auth = () => {
           <div className="lg:hidden">
             <AssurancePanel className="mb-8" />
           </div>
+
+          {nextPath && (
+            <p className="rounded-md border border-primary/30 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">Almost there.</span>{" "}
+              {nextPath.startsWith("/create-listing")
+                ? "Sign in or create an account to attach photos and publish your listing."
+                : nextPath.startsWith("/product")
+                  ? "Sign in or create an account to buy this item."
+                  : "Sign in or create an account to continue where you left off."}
+            </p>
+          )}
 
           <div className="mt-6 space-y-3 lg:mt-0">
             <Button

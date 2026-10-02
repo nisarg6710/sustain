@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { describeEdgeFunctionError } from "@/lib/edgeFunctions";
+import { authPathWithNext } from "@/lib/authRedirect";
 import { burstConfetti } from "@/lib/confetti";
 import { cn } from "@/lib/utils";
 
@@ -108,7 +109,7 @@ const CreateListing = () => {
         description: "You need an account to publish a listing.",
         variant: "destructive",
       });
-      navigate("/auth");
+      navigate(authPathWithNext("/create-listing"));
       return;
     }
 
@@ -177,7 +178,7 @@ const CreateListing = () => {
         description: "Valuation is available to registered accounts.",
         variant: "destructive",
       });
-      navigate("/auth");
+      navigate(authPathWithNext("/create-listing"));
       return;
     }
     if (photos.length === 0) {
@@ -235,7 +236,19 @@ const CreateListing = () => {
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (!files || files.length === 0 || !user) return;
+    if (!files || files.length === 0) return;
+
+    if (!user) {
+      // The file input is unreachable while signed out, but a session can lapse
+      // between the picker opening and the file being chosen.
+      toast({
+        title: "Sign in required",
+        description: "Photos are uploaded to your account so they stay attached to your listing.",
+        variant: "destructive",
+      });
+      navigate(authPathWithNext("/create-listing"));
+      return;
+    }
 
     if (photos.length + files.length > MAX_PHOTOS) {
       toast({
@@ -340,17 +353,31 @@ const CreateListing = () => {
                   </div>
                 ))}
 
-                {photos.length < MAX_PHOTOS && (
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading || !user}
-                    className="flex aspect-square flex-col items-center justify-center gap-2 rounded-md border border-dashed border-input bg-secondary/40 text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary disabled:opacity-60"
-                  >
-                    <Camera className="h-5 w-5" />
-                    <span className="text-xs font-medium">{uploading ? "Uploading…" : "Add photo"}</span>
-                  </button>
-                )}
+                {photos.length < MAX_PHOTOS &&
+                  (user ? (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                      className="flex aspect-square flex-col items-center justify-center gap-2 rounded-md border border-dashed border-input bg-secondary/40 text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary disabled:opacity-60"
+                    >
+                      <Camera className="h-5 w-5" />
+                      <span className="text-xs font-medium">{uploading ? "Uploading…" : "Add photo"}</span>
+                    </button>
+                  ) : (
+                    // A disabled upload tile gave no reason why, so the drop zone
+                    // looked broken. This states the requirement and offers the fix.
+                    <Link
+                      to={authPathWithNext("/create-listing")}
+                      className="flex aspect-square flex-col items-center justify-center gap-2 rounded-md border border-dashed border-primary/40 bg-primary/5 p-3 text-center text-muted-foreground transition-colors hover:border-primary/70 hover:bg-primary/10"
+                    >
+                      <Camera className="h-5 w-5 text-primary" />
+                      <span className="text-xs font-medium text-foreground">Sign in to add photos</span>
+                      <span className="text-[11px] leading-tight">
+                        Uploads need an account so photos stay attached to your listing.
+                      </span>
+                    </Link>
+                  ))}
               </div>
 
               <input
@@ -494,13 +521,25 @@ const CreateListing = () => {
                     type="button"
                     variant="outline"
                     onClick={handleValuation}
-                    disabled={analysing || uploading || !user}
+                    disabled={analysing || uploading}
                     className="sm:w-56"
                   >
                     <Bot className="h-4 w-4" />
                     {analysing ? "Valuating…" : "Request valuation"}
                   </Button>
                 </div>
+                {!user && (
+                  <p className="text-xs text-muted-foreground">
+                    Valuation runs on our servers, so it needs a signed-in account.{" "}
+                    <Link
+                      to={authPathWithNext("/create-listing")}
+                      className="font-medium text-primary hover:underline focus-visible:underline"
+                    >
+                      Sign in to unlock it
+                    </Link>
+                    .
+                  </p>
+                )}
                 {valuation && (
                   <p className="text-xs text-muted-foreground">
                     Valuation applied: <span className="font-medium text-foreground">{valuation.ecoCoins} EC</span>
@@ -621,10 +660,11 @@ const CreateListing = () => {
               <CardContent className="p-5">
                 <p className="text-sm font-medium text-foreground">Sign in to publish</p>
                 <p className="mt-1.5 text-sm text-muted-foreground">
-                  You can prepare a listing without an account, but publishing requires a verified profile.
+                  Everything you type here is kept. Signing in unlocks photo uploads, AI valuation and publishing —
+                  then returns you straight to this form.
                 </p>
                 <Button asChild className="mt-4 w-full">
-                  <Link to="/auth">
+                  <Link to={authPathWithNext("/create-listing")}>
                     <Plus className="h-4 w-4" />
                     Create an account
                   </Link>

@@ -16,6 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useIsAffiliate } from "@/hooks/useIsAffiliate";
 import { useToast } from "@/hooks/use-toast";
 import { formatNumber } from "@/lib/format";
+import { authPathWithNext } from "@/lib/authRedirect";
 
 const COMMISSION_RATE = 0.1;
 
@@ -36,7 +37,7 @@ interface AffiliateLinkRow {
 }
 
 const AffiliateDashboard = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { isAffiliate, checking } = useIsAffiliate();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -48,10 +49,14 @@ const AffiliateDashboard = () => {
   const [totalSales, setTotalSales] = useState(0);
 
   useEffect(() => {
+    // `user` is null until the stored session resolves, so waiting on
+    // `authLoading` avoids redirecting a signed-in visitor on refresh.
+    if (authLoading) return;
+
     if (!user) {
-      navigate("/auth");
+      navigate(authPathWithNext("/affiliate-dashboard"));
     }
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
   const fetchAffiliateStats = useCallback(async () => {
     if (!user) return;

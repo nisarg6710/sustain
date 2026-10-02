@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { authPathWithNext } from "@/lib/authRedirect";
 import { useToast } from "@/hooks/use-toast";
 import { describeEdgeFunctionError } from "@/lib/edgeFunctions";
 import { burstConfetti } from "@/lib/confetti";
@@ -326,7 +327,7 @@ const OrderList = (props: OrderListProps) => (
 );
 
 const MyOrders = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -358,12 +359,16 @@ const MyOrders = () => {
   }, [user]);
 
   useEffect(() => {
+    // `user` is null until the persisted session resolves, so redirecting
+    // before that settles bounced signed-in visitors to /auth on refresh.
+    if (authLoading) return;
+
     if (!user) {
-      navigate("/auth");
+      navigate(authPathWithNext("/my-orders"));
       return;
     }
     fetchOrders();
-  }, [user, navigate, fetchOrders]);
+  }, [user, authLoading, navigate, fetchOrders]);
 
   const handleMarkAsShipped = async (orderId: string) => {
     if (!trackingNumber.trim()) {

@@ -11,7 +11,7 @@ interface AuthContextType {
   session: Session | null;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signInWithProvider: (provider: OAuthProvider) => Promise<{ error: AuthError | null }>;
+  signInWithProvider: (provider: OAuthProvider, returnTo?: string) => Promise<{ error: AuthError | null }>;
   resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
   loading: boolean;
@@ -66,7 +66,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       toast.success('Account created successfully! Welcome to Sustain.');
-      navigate('/');
       return { error: null };
     } catch (error: any) {
       toast.error('An unexpected error occurred');
@@ -95,12 +94,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const signInWithProvider = async (provider: OAuthProvider) => {
+  const signInWithProvider = async (provider: OAuthProvider, returnTo?: string) => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/`,
+          // Returning to the page the visitor left is what makes the OAuth
+          // round trip feel continuous rather than dumping them on the home page.
+          redirectTo: `${window.location.origin}${returnTo || '/'}`,
           scopes: provider === 'facebook' ? 'email,public_profile' : undefined,
         },
       });

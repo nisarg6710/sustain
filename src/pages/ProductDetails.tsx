@@ -49,6 +49,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAffiliate } from "@/hooks/useIsAffiliate";
 import { useToast } from "@/hooks/use-toast";
+import { authPathWithNext } from "@/lib/authRedirect";
 import { conditionVariant, formatCategory, formatCondition, formatCoins, formatDate } from "@/lib/format";
 import { describeEdgeFunctionError } from "@/lib/edgeFunctions";
 import { burstConfetti } from "@/lib/confetti";
@@ -197,7 +198,14 @@ const ProductDetails = () => {
 
   const handlePurchase = () => {
     if (!user) {
-      navigate("/auth");
+      // Buying spends EcoCoins from a personal wallet, so say why the click
+      // did nothing instead of silently bouncing to the sign-in page.
+      toast({
+        title: "Sign in to buy this item",
+        description: "Purchases are paid from your EcoCoin wallet, which needs an account.",
+        variant: "destructive",
+      });
+      navigate(authPathWithNext(`/product/${id}`));
       return;
     }
 

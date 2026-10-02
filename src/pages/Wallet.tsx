@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { authPathWithNext } from "@/lib/authRedirect";
 import { formatCoins, formatTimestamp, titleCase } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -26,15 +27,20 @@ interface Transaction {
 }
 
 const Wallet = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [balance, setBalance] = useState(0);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
 
   useEffect(() => {
+    // `user` stays null until the persisted session has been read, so
+    // redirecting before that settles bounced signed-in visitors to the
+    // sign-in page on every hard refresh of this route.
+    if (authLoading) return;
+
     if (!user) {
-      navigate("/auth");
+      navigate(authPathWithNext("/wallet"));
       return;
     }
 
@@ -55,7 +61,7 @@ const Wallet = () => {
     };
 
     fetchWalletData();
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
   const summary = useMemo(() => {
     const credits = transactions.filter((t) => t.amount > 0);
