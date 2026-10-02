@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   BarChart3,
   ChevronDown,
@@ -9,6 +9,7 @@ import {
   Menu,
   Package,
   Plus,
+  Search,
   ShoppingBag,
   Wallet,
   type LucideIcon,
@@ -17,6 +18,7 @@ import {
 import { Brand } from "@/components/Brand";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Sheet,
   SheetContent,
@@ -62,6 +64,53 @@ const MobileLink = ({
     {label}
   </Link>
 );
+
+/**
+ * The header search was removed in an earlier pass as a dead control and never
+ * replaced. It now deep-links to the marketplace's `?q=` filter, and mirrors that
+ * filter back into the field, so the query survives a refresh, a shared link and
+ * the back button.
+ *
+ * Rendered at `xl` and up only. The signed-in header already carries brand, three
+ * nav links, the account menu and two CTAs; adding a field below that breakpoint
+ * is what previously pushed the header past a 360px viewport.
+ */
+const HeaderSearch = ({ className, onNavigate }: { className?: string; onNavigate?: () => void }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [query, setQuery] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (location.pathname !== "/marketplace") return;
+    setQuery(new URLSearchParams(location.search).get("q") ?? "");
+  }, [location.pathname, location.search]);
+
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    const trimmed = query.trim();
+    onNavigate?.();
+    navigate(trimmed ? `/marketplace?q=${encodeURIComponent(trimmed)}` : "/marketplace");
+  };
+
+  return (
+    <form role="search" onSubmit={handleSubmit} className={cn("relative", className)}>
+      <label htmlFor="header-search" className="sr-only">
+        Search inventory
+      </label>
+      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <Input
+        id="header-search"
+        ref={inputRef}
+        type="search"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder="Search inventory"
+        className="h-9 pl-9"
+      />
+    </form>
+  );
+};
 
 export const Navigation = () => {
   const { user, signOut } = useAuth();
@@ -120,6 +169,7 @@ export const Navigation = () => {
         </nav>
 
         <div className="flex items-center gap-2">
+          <HeaderSearch className="hidden w-48 xl:block" />
           <ThemeToggle />
           {user ? (
             <>
@@ -218,6 +268,8 @@ export const Navigation = () => {
                 ))}
 
                 <div className="my-3 h-px bg-border" />
+
+                <HeaderSearch className="mb-4" onNavigate={closeMenu} />
 
                 {user ? (
                   <div className="flex flex-col gap-1">

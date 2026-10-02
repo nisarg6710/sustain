@@ -46,6 +46,15 @@
     --info: 203 72% 38%;
     --info-foreground: 0 0% 100%;
 
+    /* Categorical series scale for charts. Built from the existing semantic
+       colours rather than a generic rainbow, so plotted data still reads as
+       part of this brand. Ordered most- to least-emphatic. */
+    --chart-1: 162 68% 21%;
+    --chart-2: 38 92% 45%;
+    --chart-3: 203 72% 38%;
+    --chart-4: 152 58% 30%;
+    --chart-5: 32 88% 40%;
+
     --border: 150 12% 88%;
     --input: 150 14% 82%;
     --ring: 162 68% 21%;
@@ -117,6 +126,13 @@
     --info: 203 66% 52%;
     --info-foreground: 162 30% 8%;
 
+    /* Lightened against the dark canvas; the light-mode values fail contrast here. */
+    --chart-1: 156 52% 44%;
+    --chart-2: 38 88% 56%;
+    --chart-3: 203 66% 52%;
+    --chart-4: 152 48% 46%;
+    --chart-5: 34 84% 52%;
+
     --border: 162 14% 20%;
     --input: 162 14% 24%;
     --ring: 156 52% 44%;
@@ -173,6 +189,12 @@
 
     --info: 203 72% 58%;
     --info-foreground: 160 45% 5%;
+
+    --chart-1: 156 58% 48%;
+    --chart-2: 40 92% 58%;
+    --chart-3: 203 72% 58%;
+    --chart-4: 152 54% 48%;
+    --chart-5: 36 90% 56%;
 
     --border: 155 8% 15%;
     --input: 155 8% 19%;

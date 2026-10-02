@@ -15,4 +15,24 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Routes are already lazy, but the shared vendor code was landing in one
+        // 566 kB chunk that every route paid for. Grouping by package lets a
+        // visitor's first paint skip the data-grid and charting libraries
+        // entirely, and lets unchanged vendor code stay cached across deploys.
+        // Order matters: @radix-ui and recharts both contain "react".
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return undefined;
+          if (id.includes("@supabase")) return "supabase";
+          if (id.includes("@radix-ui") || id.includes("radix-ui")) return "radix";
+          if (id.includes("recharts") || id.includes("victory-vendor") || id.includes("d3-")) return "recharts";
+          if (id.includes("@tanstack")) return "tanstack";
+          if (id.includes("react")) return "react";
+          return "vendor";
+        },
+      },
+    },
+  },
 }));

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { BarChart3, Link2, MousePointerClick, Percent, Receipt, TrendingUp } from "lucide-react";
 
 import { AppLayout } from "@/components/AppLayout";
@@ -10,6 +11,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -19,6 +21,15 @@ import { formatNumber } from "@/lib/format";
 import { authPathWithNext } from "@/lib/authRedirect";
 
 const COMMISSION_RATE = 0.1;
+
+/** Only the strongest links are charted; past this the axis labels stop being readable. */
+const MAX_CHARTED_LINKS = 8;
+
+const earningsChartConfig = {
+  commission: { label: "Commission", color: "hsl(var(--chart-1))" },
+  clicks: { label: "Clicks", color: "hsl(var(--chart-2))" },
+} satisfies ChartConfig;
+
 
 interface AffiliateLink {
   id: string;
@@ -115,6 +126,26 @@ const AffiliateDashboard = () => {
     return { conversionRate, earningsPerClick };
   }, [totalClicks, totalSales, totalEarnings]);
 
+  /**
+   * Commission per link, strongest first. The figure is a lifetime total per
+   * link, not a time series — `affiliate_earnings` is only ever summed — so this
+   * deliberately compares links rather than plotting a trend over time, which
+   * would require inventing dates the data does not carry.
+   */
+  const chartData = useMemo(
+    () =>
+      [...links]
+        .sort((a, b) => b.earnings - a.earnings)
+        .slice(0, MAX_CHARTED_LINKS)
+        .map((link) => ({
+          name: link.listing_title.length > 26 ? `${link.listing_title.slice(0, 25)}…` : link.listing_title,
+          commission: link.earnings,
+          clicks: link.clicks,
+          sales: link.sales,
+        })),
+    [links],
+  );
+
   if (checking || (isAffiliate && statsLoading)) {
     return (
       <AppLayout>
@@ -182,6 +213,79 @@ const AffiliateDashboard = () => {
             icon={Percent}
             hint="Sales as a share of clicks"
           />
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Commission by link</CardTitle>
+              <CardDescription>
+                Lifetime EcoCoins earned, strongest {Math.min(chartData.length, MAX_CHARTED_LINKS)} link
+                {chartData.length === 1 ? "" : "s"} of {links.length}.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {chartData.length === 0 ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  No commission data to chart yet.
+                </p>
+              ) : (
+                <ChartContainer config={earningsChartConfig} className="h-64 w-full">
+                  <BarChart data={chartData} layout="vertical" margin={{ left: 8, right: 16 }}>
+                    <CartesianGrid horizontal={false} strokeDasharray="3 3" />
+                    <XAxis type="number" tickLine={false} axisLine={false} width={48} />
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      tickLine={false}
+                      axisLine={false}
+                      width={150}
+                      tick={{ fontSize: 11 }}
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="commission" fill="var(--color-chart-2)" radius={[0, 3, 3, 0]} />
+                  </BarChart>
+                </ChartContainer>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Traffic versus sales</CardTitle>
+              <CardDescription>
+                Clicks and referred orders per link. A tall click bar with no sales bar beside it is a
+                landing-page problem, not a traffic problem.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {chartData.length === 0 ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  No click data to chart yet.
+                </p>
+              ) : (
+                <ChartContainer config={earningsChartConfig} className="h-64 w-full">
+                  <BarChart data={chartData} margin={{ left: 4, right: 16 }}>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="name"
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fontSize: 10 }}
+                      interval={0}
+                      angle={-20}
+                      textAnchor="end"
+                      height={64}
+                    />
+                    <YAxis tickLine={false} axisLine={false} width={40} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="clicks" fill="var(--color-chart-1)" radius={[3, 3, 0, 0]} />
+                    <Bar dataKey="sales" fill="var(--color-chart-3)" radius={[3, 3, 0, 0]} />
+                  </BarChart>
+                </ChartContainer>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         <Card>

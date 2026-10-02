@@ -1,25 +1,42 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
-import Index from "./pages/Index";
-import Marketplace from "./pages/Marketplace";
-import Auth from "./pages/Auth";
-import CreateListing from "./pages/CreateListing";
-import FAQ from "./pages/FAQ";
-import Legal from "./pages/Legal";
-import HowItWorks from "./pages/HowItWorks";
-import ProductDetails from "./pages/ProductDetails";
-import AffiliateDashboard from "./pages/AffiliateDashboard";
-import MyOrders from "./pages/MyOrders";
-import Wallet from "./pages/Wallet";
-import NotFound from "./pages/NotFound";
+import { AppLayout } from "@/components/AppLayout";
+import { PageLoader } from "@/components/PageLoader";
 
-const queryClient = new QueryClient();
+/**
+ * Every page is code-split so the initial download carries only the landing page.
+ * The app was a single ~708 kB chunk, which put Recharts and the whole marketplace
+ * on the critical path for a visitor who only wanted to read the home page.
+ */
+const Index = lazy(() => import("./pages/Index"));
+const Marketplace = lazy(() => import("./pages/Marketplace"));
+const Auth = lazy(() => import("./pages/Auth"));
+const CreateListing = lazy(() => import("./pages/CreateListing"));
+const FAQ = lazy(() => import("./pages/FAQ"));
+const Legal = lazy(() => import("./pages/Legal"));
+const HowItWorks = lazy(() => import("./pages/HowItWorks"));
+const ProductDetails = lazy(() => import("./pages/ProductDetails"));
+const AffiliateDashboard = lazy(() => import("./pages/AffiliateDashboard"));
+const MyOrders = lazy(() => import("./pages/MyOrders"));
+const Wallet = lazy(() => import("./pages/Wallet"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+/**
+ * Rendered while a route chunk downloads. It keeps the navigation and footer in
+ * place, because swapping the whole shell out for a bare spinner on every
+ * navigation reads as a page reload.
+ */
+const RouteFallback = () => (
+  <AppLayout>
+    <PageLoader label="Loading page…" />
+  </AppLayout>
+);
+
 
 /**
  * Client-side routing keeps the previous scroll offset, so navigating from a
@@ -38,7 +55,7 @@ const ScrollToTop = () => {
 };
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
+  <>
     <ThemeProvider>
       <TooltipProvider>
         <Toaster />
@@ -46,26 +63,28 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <ScrollToTop />
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/marketplace" element={<Marketplace />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/create-listing" element={<CreateListing />} />
-              <Route path="/faq" element={<FAQ />} />
-              <Route path="/legal" element={<Legal />} />
-              <Route path="/how-it-works" element={<HowItWorks />} />
-              <Route path="/product/:id" element={<ProductDetails />} />
-              <Route path="/affiliate-dashboard" element={<AffiliateDashboard />} />
-              <Route path="/my-orders" element={<MyOrders />} />
-              <Route path="/wallet" element={<Wallet />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <Suspense fallback={<RouteFallback />}>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/marketplace" element={<Marketplace />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/create-listing" element={<CreateListing />} />
+                <Route path="/faq" element={<FAQ />} />
+                <Route path="/legal" element={<Legal />} />
+                <Route path="/how-it-works" element={<HowItWorks />} />
+                <Route path="/product/:id" element={<ProductDetails />} />
+                <Route path="/affiliate-dashboard" element={<AffiliateDashboard />} />
+                <Route path="/my-orders" element={<MyOrders />} />
+                <Route path="/wallet" element={<Wallet />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>
-  </QueryClientProvider>
+  </>
 );
 
 export default App;

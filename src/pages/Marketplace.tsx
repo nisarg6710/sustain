@@ -79,8 +79,11 @@ const Marketplace = () => {
 
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState(searchParams.get("category") ?? "all");
+  // The query and the category live in the URL, not in component state. Search
+  // used to reset on every refresh and could not be shared or linked, which made
+  // a filtered result set impossible to send to someone else or bookmark.
+  const searchQuery = searchParams.get("q") ?? "";
+  const categoryFilter = searchParams.get("category") ?? "all";
   const [conditionFilter, setConditionFilter] = useState("all");
   const [sort, setSort] = useState("newest");
   const [view, setView] = useState<ViewMode>("grid");
@@ -112,19 +115,22 @@ const Marketplace = () => {
     fetchListings();
   }, [fetchListings]);
 
-  useEffect(() => {
-    const category = searchParams.get("category");
-    if (category) setCategoryFilter(category);
-  }, [searchParams]);
+  /**
+   * Writes a filter to the URL, replacing rather than pushing so typing in the
+   * search box does not fill the history with one entry per keystroke.
+   */
+  const updateFilter = (key: "q" | "category", value: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (value) {
+      next.set(key, value);
+    } else {
+      next.delete(key);
+    }
+    setSearchParams(next, { replace: true });
+  };
 
   const handleCategoryChange = (value: string) => {
-    setCategoryFilter(value);
-    if (value === "all") {
-      searchParams.delete("category");
-    } else {
-      searchParams.set("category", value);
-    }
-    setSearchParams(searchParams, { replace: true });
+    updateFilter("category", value === "all" ? "" : value);
   };
 
   const filteredListings = useMemo(() => {
@@ -159,8 +165,6 @@ const Marketplace = () => {
     categoryFilter !== "all" || conditionFilter !== "all" || searchQuery.trim() !== "" || savedOnly;
 
   const resetFilters = () => {
-    setSearchQuery("");
-    setCategoryFilter("all");
     setConditionFilter("all");
     setSavedOnly(false);
     setSearchParams({}, { replace: true });
@@ -217,7 +221,7 @@ const Marketplace = () => {
                   placeholder="Search by title or description"
                   className="pl-9"
                   value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
+                  onChange={(event) => updateFilter("q", event.target.value)}
                 />
               </div>
             </div>

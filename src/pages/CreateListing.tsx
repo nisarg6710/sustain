@@ -22,6 +22,16 @@ import { cn } from "@/lib/utils";
 
 const MAX_PHOTOS = 10;
 
+type FieldName = "media" | "title" | "category" | "condition" | "price";
+
+const FIELD_LABELS: Record<FieldName, string> = {
+  media: "the photo upload area",
+  title: "Title",
+  category: "Category",
+  condition: "Condition",
+  price: "Price",
+};
+
 const categoryOptions = [
   { value: "electronics", label: "Electronics" },
   { value: "fashion", label: "Fashion" },
@@ -60,6 +70,18 @@ const CreateListing = () => {
   const [valuation, setValuation] = useState<Valuation | null>(null);
   const [shipping, setShipping] = useState("seller-ships");
   const [returns, setReturns] = useState("no-returns");
+  /**
+   * Per-field errors, populated on a failed publish attempt. Validation used to be
+   * toast-only, so a message vanished after a few seconds and a screen-reader user
+   * heard nothing at all; the message now lives on the field, is announced, and
+   * focus moves to the first thing that needs attention.
+   */
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldName, string>>>({});
+  const [errorSummary, setErrorSummary] = useState<string | null>(null);
+  const titleRef = useRef<HTMLInputElement>(null);
+  const mediaRef = useRef<HTMLDivElement>(null);
+  const priceRef = useRef<HTMLInputElement>(null);
+  const errorSummaryRef = useRef<HTMLParagraphElement>(null);
   const [formData, setFormData] = useState({
     title: "",
     category: "",
@@ -98,6 +120,44 @@ const CreateListing = () => {
     setValuation(null);
     setShipping("seller-ships");
     setReturns("no-returns");
+    setFieldErrors({});
+    setErrorSummary(null);
+  };
+
+  /**
+   * Clears a field's error as soon as the seller edits it, so a resolved problem
+   * stops being reported while they are still typing.
+   */
+  const updateField = <K extends keyof typeof formData>(key: K, value: string) => {
+    setFormData((prev) => ({ ...prev, [key]: value }));
+    setFieldErrors((prev) => {
+      if (!prev[key as FieldName]) return prev;
+      const next = { ...prev };
+      delete next[key as FieldName];
+      return next;
+    });
+  };
+
+  const validate = (priceValue: number): Partial<Record<FieldName, string>> => {
+    const errors: Partial<Record<FieldName, string>> = {};
+
+    if (photos.length === 0) {
+      errors.media = "Add at least one photo. The first photo becomes the cover across the marketplace.";
+    }
+    if (!formData.title.trim()) {
+      errors.title = "Enter a clear, descriptive title.";
+    }
+    if (!formData.category) {
+      errors.category = "Select a category.";
+    }
+    if (!formData.condition) {
+      errors.condition = "Select the item condition.";
+    }
+    if (!(priceValue > 0)) {
+      errors.price = "Set a price in EcoCoins, or request an AI valuation.";
+    }
+
+    return errors;
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -114,32 +174,30 @@ const CreateListing = () => {
     }
 
     const priceValue = parseInt(formData.price || String(valuation?.ecoCoins ?? "0"), 10);
+    const errors = validate(priceValue);
+    const failed = (Object.keys(errors) as FieldName[]).filter((field) => errors[field]);
 
-    if (photos.length === 0) {
-      toast({ title: "Media required", description: "Add at least one photo.", variant: "destructive" });
-      return;
-    }
-    if (!formData.title.trim()) {
-      toast({ title: "Title required", description: "Enter a clear, descriptive title.", variant: "destructive" });
-      return;
-    }
-    if (!formData.category) {
-      toast({ title: "Category required", description: "Select a category.", variant: "destructive" });
-      return;
-    }
-    if (!formData.condition) {
-      toast({ title: "Condition required", description: "Select the item condition.", variant: "destructive" });
-      return;
-    }
-    if (!(priceValue > 0)) {
-      toast({
-        title: "Price required",
-        description: "Set a price in EcoCoins or request an AI valuation.",
-        variant: "destructive",
+    if (failed.length > 0) {
+      setFieldErrors(errors);
+      setErrorSummary(
+        `${failed.length} ${failed.length === 1 ? "requirement is" : "requirements are"} still outstanding: ${failed
+          .map((field) => FIELD_LABELS[field])
+          .join(", ")}.`,
+      );
+      // Send focus to the first problem rather than leaving it on a button the
+      // seller has to reason about. media comes first, and it is the one element
+      // on the page that is not a form control, so it takes focus via a ref.
+      window.requestAnimationFrame(() => {
+        if (failed[0] === "media") mediaRef.current?.focus();
+        else if (failed[0] === "price") priceRef.current?.focus();
+        else if (failed[0] === "title") titleRef.current?.focus();
+        else errorSummaryRef.current?.focus();
       });
       return;
     }
 
+    setFieldErrors({});
+    setErrorSummary(null);
     setSubmitting(true);
 
     const { error } = await supabase.from("listings").insert({
@@ -333,7 +391,18 @@ const CreateListing = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <div
+                ref={mediaRef}
+                tabIndex={-1}
+                role="group"
+                aria-label="Listing photos"
+                aria-invalid={fieldErrors.media ? true : undefined}
+                aria-describedby={fieldErrors.media ? "media-error" : undefined}
+                className={cn(
+                  "grid grid-cols-2 gap-4 rounded-md focus-visible:outline-none sm:grid-cols-4",
+                  fieldErrors.media && "focus-visible:ring-2 focus-visible:ring-destructive",
+                )}
+              >
                 {photos.map((photo, index) => (
                   <div key={photo} className="group relative aspect-square overflow-hidden rounded-md border border-border">
                     <img src={photo} alt={`Upload ${index + 1}`} className="h-full w-full object-cover" />
@@ -389,6 +458,12 @@ const CreateListing = () => {
                 className="hidden"
               />
 
+              {fieldErrors.media && (
+                <p id="media-error" role="alert" className="mt-3 text-xs font-medium text-destructive">
+                  {fieldErrors.media}
+                </p>
+              )}
+
               <p className="mt-4 flex items-start gap-2 text-xs text-muted-foreground">
                 <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 Neutral, well-lit photos on a plain background produce the most reliable valuation.
@@ -406,10 +481,18 @@ const CreateListing = () => {
                 <Label htmlFor="title">Title</Label>
                 <Input
                   id="title"
+                  ref={titleRef}
                   placeholder="e.g. Canon AE-1 35mm film camera, serviced 2024"
                   value={formData.title}
-                  onChange={(event) => setFormData({ ...formData, title: event.target.value })}
+                  onChange={(event) => updateField("title", event.target.value)}
+                  aria-invalid={fieldErrors.title ? true : undefined}
+                  aria-describedby={fieldErrors.title ? "title-error" : undefined}
                 />
+                {fieldErrors.title && (
+                  <p id="title-error" role="alert" className="text-xs font-medium text-destructive">
+                    {fieldErrors.title}
+                  </p>
+                )}
               </div>
 
               <div className="grid gap-5 sm:grid-cols-2">
@@ -417,9 +500,9 @@ const CreateListing = () => {
                   <Label htmlFor="category">Category</Label>
                   <Select
                     value={formData.category}
-                    onValueChange={(value) => setFormData({ ...formData, category: value })}
+                    onValueChange={(value) => updateField("category", value)}
                   >
-                    <SelectTrigger id="category">
+                    <SelectTrigger id="category" aria-invalid={fieldErrors.category ? true : undefined}>
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
@@ -430,15 +513,20 @@ const CreateListing = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                  {fieldErrors.category && (
+                    <p role="alert" className="text-xs font-medium text-destructive">
+                      {fieldErrors.category}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="condition">Condition</Label>
                   <Select
                     value={formData.condition}
-                    onValueChange={(value) => setFormData({ ...formData, condition: value })}
+                    onValueChange={(value) => updateField("condition", value)}
                   >
-                    <SelectTrigger id="condition">
+                    <SelectTrigger id="condition" aria-invalid={fieldErrors.condition ? true : undefined}>
                       <SelectValue placeholder="Select condition" />
                     </SelectTrigger>
                     <SelectContent>
@@ -449,6 +537,11 @@ const CreateListing = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                  {fieldErrors.condition && (
+                    <p role="alert" className="text-xs font-medium text-destructive">
+                      {fieldErrors.condition}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -458,7 +551,7 @@ const CreateListing = () => {
                   id="description"
                   placeholder="Condition notes, included accessories, service history, known faults…"
                   value={formData.description}
-                  onChange={(event) => setFormData({ ...formData, description: event.target.value })}
+                  onChange={(event) => updateField("description", event.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">{formData.description.length} characters</p>
               </div>
@@ -511,11 +604,14 @@ const CreateListing = () => {
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <Input
                     id="price"
+                    ref={priceRef}
                     type="number"
                     min={1}
                     placeholder="e.g. 450"
                     value={formData.price}
-                    onChange={(event) => setFormData({ ...formData, price: event.target.value })}
+                    onChange={(event) => updateField("price", event.target.value)}
+                    aria-invalid={fieldErrors.price ? true : undefined}
+                    aria-describedby={fieldErrors.price ? "price-error" : undefined}
                   />
                   <Button
                     type="button"
@@ -540,6 +636,11 @@ const CreateListing = () => {
                     .
                   </p>
                 )}
+                {fieldErrors.price && (
+                  <p id="price-error" role="alert" className="text-xs font-medium text-destructive">
+                    {fieldErrors.price}
+                  </p>
+                )}
                 {valuation && (
                   <p className="text-xs text-muted-foreground">
                     Valuation applied: <span className="font-medium text-foreground">{valuation.ecoCoins} EC</span>
@@ -554,11 +655,22 @@ const CreateListing = () => {
               <p className="text-sm font-medium text-foreground">
                 {completedCount} of {requirements.length} requirements complete
               </p>
-              <p className="text-xs text-muted-foreground">
-                {readyToPublish
-                  ? "Ready to publish. Listings go live immediately."
-                  : "Listings go live immediately once every requirement is met."}
-              </p>
+              {errorSummary ? (
+                <p
+                  ref={errorSummaryRef}
+                  role="alert"
+                  tabIndex={-1}
+                  className="text-xs font-medium text-destructive focus-visible:outline-none"
+                >
+                  {errorSummary}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  {readyToPublish
+                    ? "Ready to publish. Listings go live immediately."
+                    : "Listings go live immediately once every requirement is met."}
+                </p>
+              )}
             </div>
             <Button type="submit" disabled={submitting || uploading} className="sm:w-48">
               <Upload className="h-4 w-4" />
