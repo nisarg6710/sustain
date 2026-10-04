@@ -56,8 +56,8 @@ export const Footer = () => (
         <div>
           <Brand />
           <p className="mt-5 max-w-xs text-sm leading-relaxed text-muted-foreground">
-            Sustain operates a regulated secondary market for pre-owned goods — extending product lifecycles while
-            keeping settlement, custody and environmental reporting auditable.
+            A better way to buy and sell pre-loved goods—extending product lifecycles while keeping every purchase
+            protected and its impact visible.
           </p>
           <a
             href="mailto:support@sustain.eco"
