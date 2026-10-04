@@ -51,10 +51,10 @@ export const PageHeader = ({
 
       <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div className="max-w-2xl">
-          {eyebrow && <p className="eyebrow mb-2">{eyebrow}</p>}
-          <h1 className="text-3xl font-semibold tracking-tightest text-foreground md:text-4xl">{title}</h1>
-          {description && <p className="mt-3 text-lede leading-relaxed text-muted-foreground">{description}</p>}
-          {meta && <div className="mt-4">{meta}</div>}
+          {eyebrow && <p className="eyebrow mb-2.5">{eyebrow}</p>}
+          <h1 className="display text-display font-semibold text-foreground">{title}</h1>
+          {description && <p className="mt-3.5 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lede">{description}</p>}
+          {meta && <div className="mt-5">{meta}</div>}
         </div>
         {actions && <div className="flex shrink-0 flex-wrap items-center gap-3">{actions}</div>}
       </div>

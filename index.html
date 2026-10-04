@@ -1,48 +1,59 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-GB">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sustain — Circular commerce infrastructure for pre-owned goods</title>
+    <title>Sustain — second-hand, without the gamble</title>
     <meta
       name="description"
-      content="Sustain settles pre-owned inventory through audited escrow, AI-assisted valuation and a verified EcoCoin ledger. A compliant route to circular revenue."
+      content="Buy and sell pre-loved things on Sustain. Every item is priced in EcoCoins, and every payment is held until the thing actually turns up."
     />
     <meta name="author" content="Sustain Markets Ltd." />
-    <meta name="theme-color" content="#0d3b2e" />
+    <meta name="theme-color" content="#0a0f0d" />
 
-    <meta property="og:title" content="Sustain — Circular commerce infrastructure" />
+    <meta property="og:title" content="Sustain — second-hand, without the gamble" />
     <meta
       property="og:description"
-      content="Escrow-protected settlement, AI-assisted valuation and item-level impact reporting for the secondary goods market."
+      content="A marketplace for pre-loved goods. EcoCoin pricing, protected payments, and an honest condition grade on every listing."
     />
     <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_GB" />
     <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Fraunces carries the display voice, Instrument Sans the interface.
+         Loaded here rather than in CSS so the request starts before the bundle
+         is parsed. `display=swap` means text is readable immediately. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Instrument+Sans:wght@400..700&display=swap"
+    />
 
     <script>
       // Resolve the appearance before first paint so there is no flash of the
-      // wrong theme. Mirrors src/hooks/useTheme.tsx.
+      // wrong theme. Mirrors src/hooks/useTheme.tsx, which defaults to dark —
+      // the product is designed in dark and the OS preference is not consulted.
       (function () {
         try {
           var key = "sustain-theme";
-          var colors = { light: "#f7faf8", dark: "#0c1a16", amoled: "#000000" };
+          var colors = { light: "#fafbf9", dark: "#0a0f0d", amoled: "#000000" };
           var stored = window.localStorage.getItem(key);
           var theme =
             stored === "light" || stored === "dark" || stored === "amoled"
               ? stored
-              : window.matchMedia("(prefers-color-scheme: dark)").matches
-                ? "dark"
-                : "light";
+              : "dark";
 
           var root = document.documentElement;
           root.classList.remove("light", "dark", "amoled");
+          if (theme === "light") root.classList.add("light");
           if (theme === "dark") root.classList.add("dark");
           if (theme === "amoled") root.classList.add("dark", "amoled");
 
           var meta = document.querySelector('meta[name="theme-color"]');
           if (meta) meta.setAttribute("content", colors[theme]);
         } catch (error) {
-          /* storage unavailable — fall back to the light default */
+          /* storage unavailable — fall back to the dark default */
         }
       })();
     </script>
@@ -74,27 +85,28 @@
           wrap.setAttribute("role", "alert");
           wrap.style.cssText =
             "min-height:100vh;display:flex;align-items:center;justify-content:center;" +
-            "padding:4rem 1.5rem;font:400 15px/1.65 system-ui,-apple-system,sans-serif;" +
-            "background:#0c1a16;color:#e9f1ed";
+            "padding:4rem 1.5rem;font:400 15px/1.65 'Instrument Sans',system-ui,-apple-system,sans-serif;" +
+            "background:#0a0f0d;color:#e9f1ed";
 
           var inner = document.createElement("div");
           inner.style.cssText = "max-width:34rem";
 
           var heading = document.createElement("h1");
           heading.textContent = "This deployment failed to start";
-          heading.style.cssText = "font-size:1.5rem;font-weight:600;margin:0 0 .75rem;letter-spacing:-.01em";
+          heading.style.cssText =
+            "font:600 1.6rem/1.15 'Fraunces',Georgia,serif;margin:0 0 .75rem;letter-spacing:-.015em";
 
           var body = document.createElement("p");
           body.textContent =
             "The app's JavaScript failed before it could render. This is a build or deployment problem, " +
-            "not a problem with your browser. The details below are what the browser reported.";
+            "not a problem with your browser. Nothing you did caused it. The details below are what the browser reported.";
           body.style.cssText = "margin:0 0 1.25rem;opacity:.78";
 
           var pre = document.createElement("pre");
           pre.textContent = detail;
           pre.style.cssText =
             "white-space:pre-wrap;overflow:auto;max-height:12rem;padding:.75rem;" +
-            "border:1px solid rgba(255,255,255,.16);border-radius:.375rem;font-size:12px;opacity:.82";
+            "border:1px solid rgba(255,255,255,.16);border-radius:.5rem;font-size:12px;opacity:.82";
 
           inner.appendChild(heading);
           inner.appendChild(body);

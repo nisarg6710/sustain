@@ -11,7 +11,7 @@ interface BrandProps {
 export const BrandMark = ({ className }: { className?: string }) => (
   <span
     className={cn(
-      "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm",
+      "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground",
       className,
     )}
   >
@@ -30,7 +30,7 @@ export const Brand = ({ className, compact = false, inverted = false }: BrandPro
       <span className="flex flex-col leading-none">
         <span
           className={cn(
-            "text-[17px] font-semibold tracking-tight",
+            "display text-[19px] font-semibold tracking-tight",
             inverted ? "text-white" : "text-foreground",
           )}
         >
@@ -38,11 +38,11 @@ export const Brand = ({ className, compact = false, inverted = false }: BrandPro
         </span>
         <span
           className={cn(
-            "mt-0.5 text-[10px] font-medium uppercase tracking-[0.16em]",
+            "mt-1 text-[10px] font-medium uppercase tracking-[0.14em]",
             inverted ? "text-white/60" : "text-muted-foreground",
           )}
         >
-          Circular Marketplace
+          Pre-loved, properly
         </span>
       </span>
     )}

@@ -43,30 +43,31 @@ export class AppErrorBoundary extends Component<Props, State> {
 
     return (
       <main className="flex min-h-screen items-center justify-center bg-background px-6 py-16 text-foreground">
-        <div className="w-full max-w-lg space-y-5">
-          <p className="eyebrow">Something went wrong</p>
-          <h1 className="text-2xl font-semibold tracking-tight">This page failed to load</h1>
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            The app hit an unexpected error and stopped rather than showing a half-working page. Reloading
-            usually fixes it. If it keeps happening, the details below identify the cause.
+        <div className="w-full max-w-lg">
+          <p className="eyebrow">Well, this is awkward</p>
+          <h1 className="display mt-4 text-display font-semibold">The page fell over</h1>
+          <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+            Something in the app broke and it stopped dead rather than pretending half of it worked. Reloading
+            usually sorts it. If it keeps happening, it&rsquo;s our fault and the details below say exactly what
+            went wrong.
           </p>
 
-          <pre className="max-h-48 overflow-auto rounded-md border border-border bg-card p-3 text-xs leading-relaxed text-muted-foreground">
+          <pre className="mt-6 max-h-48 overflow-auto rounded-xl border border-border bg-card p-4 font-mono text-xs leading-relaxed text-muted-foreground">
             {error.message || String(error)}
           </pre>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="mt-7 flex flex-wrap gap-3">
             <button
               type="button"
               onClick={() => window.location.reload()}
-              className="inline-flex h-10 items-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="inline-flex h-11 items-center rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
-              Reload the page
+              Reload and hope
             </button>
             <button
               type="button"
               onClick={this.handleReset}
-              className="inline-flex h-10 items-center rounded-md border border-border px-4 text-sm font-medium transition-colors hover:border-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="inline-flex h-11 items-center rounded-xl border border-border px-5 text-sm font-medium transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               Try again without reloading
             </button>

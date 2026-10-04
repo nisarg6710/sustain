@@ -143,7 +143,7 @@ const Wallet = () => {
       <PageHeader
         eyebrow="Account"
         title="Wallet"
-        description="Your EcoCoin balance and full movement history. Settlement credits post once delivery is confirmed."
+        description="Your balance, and everything that has moved through it. Sales land here once the buyer confirms delivery — not before."
         breadcrumbs={[{ label: "Home", to: "/" }, { label: "Wallet" }]}
         actions={
           <Button asChild>
@@ -211,11 +211,11 @@ const Wallet = () => {
             {all.length === 0 ? (
               <EmptyState
                 icon={Receipt}
-                title="No wallet activity yet"
-                description="Sales, purchases and commission payments will appear here as they settle."
+                title="Nothing has moved yet"
+                description="Sales, purchases and commission all land here once they settle. It's a very quiet page at the moment."
                 action={
                   <Button asChild>
-                    <Link to="/marketplace">Browse the marketplace</Link>
+                    <Link to="/marketplace">Go and spend some</Link>
                   </Button>
                 }
               />
@@ -228,8 +228,8 @@ const Wallet = () => {
             {credits.length === 0 ? (
               <EmptyState
                 icon={ArrowUpRight}
-                title="No credits recorded"
-                description="Completed sales and affiliate commission will be credited here."
+                title="No money in"
+                description="Completed sales and affiliate commission turn up here. Selling something is the fastest way to change that."
               />
             ) : (
               renderTable(credits)
@@ -240,8 +240,8 @@ const Wallet = () => {
             {debits.length === 0 ? (
               <EmptyState
                 icon={ArrowDownRight}
-                title="No debits recorded"
-                description="Purchases and platform fees will be deducted here."
+                title="No money out"
+                description="Purchases and platform fees are listed here. Nothing has been charged yet, which is nice."
               />
             ) : (
               renderTable(debits)

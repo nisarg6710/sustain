@@ -447,7 +447,7 @@ const MyOrders = () => {
       <PageHeader
         eyebrow="Account"
         title="Orders"
-        description="Purchases and sales across the marketplace. Escrow releases on delivery confirmation."
+        description="Things you've bought, and things other people have bought off you. Money moves when delivery is confirmed, so the tracking number matters."
         breadcrumbs={[{ label: "Home", to: "/" }, { label: "Orders" }]}
         actions={
           <Button asChild variant="outline">
@@ -492,11 +492,11 @@ const MyOrders = () => {
             {buyerOrders.length === 0 ? (
               <EmptyState
                 icon={ShoppingBag}
-                title="No purchases yet"
-                description="Items you buy will appear here with tracking and delivery confirmation."
+                title="You haven't bought anything yet"
+                description="Anything you buy shows up here with its tracking number, and a button to confirm it arrived. That button is what releases the seller's money, so use it when it's genuinely in your hands."
                 action={
                   <Button asChild>
-                    <Link to="/marketplace">Browse the marketplace</Link>
+                    <Link to="/marketplace">Find something</Link>
                   </Button>
                 }
               />
@@ -517,11 +517,11 @@ const MyOrders = () => {
             {sellerOrders.length === 0 ? (
               <EmptyState
                 icon={Package}
-                title="No sales yet"
-                description="Publish a listing to start selling. Record dispatch once an order is placed."
+                title="Nothing sold yet"
+                description="List something and it'll appear here the moment an order lands. You record the tracking number, the buyer confirms it arrived, and then you get paid."
                 action={
                   <Button asChild>
-                    <Link to="/create-listing">Create a listing</Link>
+                    <Link to="/create-listing">List something</Link>
                   </Button>
                 }
               />

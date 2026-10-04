@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 const cardVariants = cva("bg-card text-card-foreground", {
   variants: {
     variant: {
-      default: "rounded-lg border border-border shadow-xs",
+      default: "rounded-xl border border-border shadow-xs",
       bare: "",
     },
   },
@@ -37,7 +37,7 @@ CardHeader.displayName = "CardHeader";
 
 const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
-    <h3 ref={ref} className={cn("text-base font-semibold leading-tight tracking-tight text-foreground", className)} {...props} />
+      <h3 ref={ref} className={cn("display text-base font-semibold leading-snug text-foreground", className)} {...props} />
   ),
 );
 CardTitle.displayName = "CardTitle";

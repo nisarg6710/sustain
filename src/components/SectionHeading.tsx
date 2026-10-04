@@ -26,11 +26,13 @@ export const SectionHeading = ({
   >
     <div className={cn("max-w-2xl", align === "center" && "mx-auto")}>
       {eyebrow && <p className="eyebrow mb-3">{eyebrow}</p>}
-      <h2 className="text-2xl font-semibold tracking-tight text-foreground md:text-section-title">
+      <h2 className="display text-2xl font-semibold text-foreground sm:text-section-title">
         {title}
       </h2>
       {description && (
-        <p className="mt-3 text-lede leading-relaxed text-muted-foreground">{description}</p>
+        <p className="mt-3 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lede">
+          {description}
+        </p>
       )}
     </div>
     {children && (

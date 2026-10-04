@@ -24,15 +24,16 @@ export const EmptyState = ({
 }: EmptyStateProps) => (
   <div
     className={cn(
-      "flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card px-6 py-16 text-center",
+      "flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card px-6 py-14 text-center sm:py-20",
       className,
     )}
   >
-    <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-primary">
-      <Icon className="h-5 w-5" aria-hidden="true" />
-    </span>
-    <Heading className="mt-5 text-base font-semibold text-foreground">{title}</Heading>
+    {/* The icon is kept for orientation but sits behind the text rather than in
+        a tinted circle above it — a decorative badge on every empty state is one
+        of the more recognisable generated-dashboard tells. */}
+    <Icon className="h-6 w-6 text-muted-foreground/40" aria-hidden="true" />
+    <Heading className="display mt-5 text-xl font-semibold text-foreground sm:text-2xl">{title}</Heading>
     <p className="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">{description}</p>
-    {action && <div className="mt-6">{action}</div>}
+    {action && <div className="mt-7">{action}</div>}
   </div>
 );

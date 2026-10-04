@@ -87,8 +87,8 @@ const HowItWorks = () => (
   <AppLayout contained={false}>
     <PageHeader
       eyebrow="Process guide"
-      title="How Sustain works"
-      description="The end-to-end workflow for sellers and buyers, from item registration through to settlement."
+      title="How it all works"
+      description="The whole workflow for both sides of a trade, from listing something to getting paid for it. No jargon, we checked."
       breadcrumbs={[{ label: "Home", to: "/" }, { label: "How it works" }]}
       actions={
         <>
@@ -106,8 +106,8 @@ const HowItWorks = () => (
       <section>
         <SectionHeading
           eyebrow="Four stages"
-          title="From intake to settled payout"
-          description="Each stage has defined inputs and outputs, so both sides of a trade know exactly what happens next."
+          title="Four stages, start to payout"
+          description="Both sides of a trade can see exactly what happens next, and what each of them needs to have done before that."
         />
 
         <ol className="mt-10 space-y-px overflow-hidden rounded-lg border border-border bg-border">
@@ -145,8 +145,8 @@ const HowItWorks = () => (
       <section>
         <SectionHeading
           eyebrow="Controls"
-          title="What protects both sides of a trade"
-          description="Settlement controls are built into the workflow rather than bolted on afterwards."
+          title="What keeps both sides honest"
+          description="These are part of the process itself rather than something bolted on afterwards when something goes wrong."
         />
 
         <div className="mt-10 grid gap-px overflow-hidden rounded-lg border border-border bg-border md:grid-cols-3">

@@ -37,27 +37,30 @@ export const describeEdgeFunctionError = async (
   error: EdgeFunctionError | null | undefined,
   service: string,
 ): Promise<string> => {
-  if (!error) return `The ${service} service is unavailable. Please try again.`;
+  if (!error) return `The ${service} service isn't answering just now. Give it another go in a moment.`;
 
   switch (error.name) {
     case "FunctionsFetchError":
-      return `Could not reach the ${service} service. The request never reached the server — check your connection, and confirm the function is deployed to this project.`;
+      return `We couldn't reach the ${service} service at all — the request never left your browser. Check your connection, and if you're running this yourself, check the function is actually deployed.`;
 
     case "FunctionsRelayError":
-      return `The ${service} service is temporarily unreachable. Please try again in a moment.`;
+      return `The ${service} service is down for a moment. Nothing was charged. Try again shortly.`;
 
     case "FunctionsHttpError": {
       const serverMessage = await readServerMessage(error);
+      // The function's own words come first. "Rate limit exceeded" or
+      // "Insufficient EcoCoins balance" is more use to a person than anything
+      // phrased from the outside.
       if (serverMessage) return serverMessage;
 
       const response = error.context as Response | undefined;
       const status = response?.status;
       return status
-        ? `The ${service} service returned an error (HTTP ${status}).`
-        : `The ${service} service returned an error.`;
+        ? `The ${service} service had a problem (HTTP ${status}). It isn't you — try again shortly.`
+        : `The ${service} service had a problem. Nothing was charged — try again shortly.`;
     }
 
     default:
-      return error.message || `The ${service} service is unavailable. Please try again.`;
+      return error.message || `The ${service} service isn't answering just now. Give it another go in a moment.`;
   }
 };

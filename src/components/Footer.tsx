@@ -56,21 +56,21 @@ export const Footer = () => (
         <div>
           <Brand />
           <p className="mt-5 max-w-xs text-sm leading-relaxed text-muted-foreground">
-            A better way to buy and sell pre-loved goods—extending product lifecycles while keeping every purchase
-            protected and its impact visible.
+            A marketplace for things that have already been loved once. We handle the money, the grading and the
+            awkward questions, so you don&rsquo;t have to.
           </p>
           <a
             href="mailto:support@sustain.eco"
-            className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-foreground transition-colors hover:text-primary"
+            className="link-underline mt-5 inline-flex items-center gap-2 text-sm font-medium text-foreground"
           >
-            <Mail className="h-4 w-4" />
+            <Mail className="h-4 w-4" aria-hidden="true" />
             support@sustain.eco
           </a>
         </div>
 
         {columns.map((column) => (
           <div key={column.title}>
-            <h3 className="eyebrow text-foreground">{column.title}</h3>
+            <h3 className="eyebrow-muted">{column.title}</h3>
             <ul className="mt-4 space-y-1 text-sm">
               {column.links.map((link) => (
                 <li key={link.label}>
@@ -104,9 +104,9 @@ export const Footer = () => (
               target="_blank"
               rel="noreferrer noopener"
               aria-label={social.label}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
             >
-              <social.icon className="h-4 w-4" />
+              <social.icon className="h-4 w-4" aria-hidden="true" />
             </a>
           ))}
         </div>
@@ -119,6 +119,11 @@ export const Footer = () => (
           </Link>
         ))}
       </nav>
+
+      <p className="mt-8 max-w-2xl text-xs leading-relaxed text-muted-foreground/80">
+        EcoCoin is a unit of account used inside Sustain. It is not a cryptocurrency, it cannot be traded
+        elsewhere, and it is not money. Please don&rsquo;t write a trading bot.
+      </p>
     </div>
   </footer>
 );

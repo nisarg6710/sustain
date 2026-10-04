@@ -65,10 +65,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return { error };
       }
       
-      toast.success('Account created successfully! Welcome to Sustain.');
+      toast.success('Account created. Welcome to Sustain.');
       return { error: null };
     } catch (error: any) {
-      toast.error('An unexpected error occurred');
+      toast.error('That did not work. Try again in a moment.');
       return { error };
     }
   };
@@ -85,11 +85,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return { error };
       }
       
-      toast.success('Welcome back!');
+      toast.success('Welcome back.');
       navigate('/');
       return { error: null };
     } catch (error: any) {
-      toast.error('An unexpected error occurred');
+      toast.error('That did not work. Try again in a moment.');
       return { error };
     }
   };
@@ -113,7 +113,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       return { error: null };
     } catch (error) {
-      toast.error('An unexpected error occurred');
+      toast.error('That did not work. Try again in a moment.');
       return { error: error as AuthError };
     }
   };
@@ -142,11 +142,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (error) {
         toast.error(error.message);
       } else {
-        toast.success('Signed out successfully');
+        toast.success('Signed out. Your saved items stay on this device.');
         navigate('/');
       }
     } catch (error: any) {
-      toast.error('An unexpected error occurred');
+      toast.error('That did not work. Try again in a moment.');
     }
   };
 

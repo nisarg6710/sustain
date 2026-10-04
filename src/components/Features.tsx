@@ -1,74 +1,81 @@
-import { Bot, Coins, Lock, Package, Sparkles, TrendingUp } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
 
 import { SectionHeading } from "@/components/SectionHeading";
 import { Reveal } from "@/components/Reveal";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 const features = [
   {
-    icon: Bot,
-    title: "AI-assisted valuation",
-    body: "Our models read condition, brand and category data to propose a defensible EcoCoin price, with the reasoning shown to the seller.",
-    meta: "Median suggestion acceptance 78%",
+    title: "Valuation that shows its working",
+    body: "Upload the photos and get a suggested price in EcoCoins, plus the reasoning behind it. Ignore it if you disagree — it's a starting point, not a verdict.",
   },
   {
-    icon: Sparkles,
-    title: "Structured catalogue data",
-    body: "Listings are normalised into a consistent schema at creation, so inventory stays comparable, searchable and reportable.",
-    meta: "12 attribute families",
+    title: "Condition, actually written down",
+    body: "Five grades, and a box for the dents, the scratches and the switch that doesn't quite click. Buyers read all of it before they pay, not after.",
   },
   {
-    icon: Lock,
-    title: "Escrow settlement",
-    body: "Every transaction is held by the platform and released to the seller on confirmed delivery, with a full dispute trail.",
-    meta: "2.1% dispute rate",
+    title: "Money that moves in one go",
+    body: "Buying debits the wallet, opens the order and locks the escrow inside a single database transaction. If any part of it fails, none of it happened.",
   },
   {
-    icon: Coins,
-    title: "EcoCoin ledger",
-    body: "A single internal unit of account for pricing, commission and payouts, with balances reconciled on every movement.",
-    meta: "Real-time balance",
+    title: "One currency, one ledger",
+    body: "EcoCoins price, pay and pay out. Every movement is a row you can read back, with a timestamp and a counterparty on it.",
   },
   {
-    icon: Package,
-    title: "Fulfilment & tracking",
-    body: "Sellers record carrier and tracking references; buyers follow the shipment through to delivery confirmation.",
-    meta: "4.2 day median dispatch",
+    title: "Dispatch and tracking",
+    body: "Sellers log the carrier and the reference number. Buyers follow it from the order page and confirm when it actually turns up.",
   },
   {
-    icon: TrendingUp,
-    title: "Performance reporting",
-    body: "Conversion, yield and settlement reporting for sellers, and click-to-earnings attribution for affiliate partners.",
-    meta: "Exportable reporting",
+    title: "Reporting worth handing over",
+    body: "Sales, commission and referral performance, exportable. Built for partners who have to answer for the numbers at the end of the quarter.",
   },
 ];
 
+/**
+ * A spec list, not a grid of icon cards.
+ *
+ * Six tiles in a 3×2 grid, each with a lucide icon in a tinted rounded square and
+ * a small uppercase stat underneath, is the default output of every generated
+ * landing page. Setting the same six items as a numbered list with hairline rules
+ * and a sticky left column reads as a page someone wrote.
+ *
+ * The old per-card `meta` line ("Median suggestion acceptance 78%", "2.1%
+ * dispute rate", "4.2 day median dispatch") has been removed rather than restyled:
+ * nothing measures those numbers, and the small-caps stat-under-a-description was
+ * doing a lot of the work that made this look machine-made.
+ */
 export const Features = () => (
-  <section id="capabilities" className="border-b border-border py-20 md:py-24">
+  <section id="capabilities" className="border-b border-border py-16 sm:py-20 lg:py-24">
     <div className="container">
-      <SectionHeading
-        eyebrow="Platform capabilities"
-        title="Operational controls for a regulated secondary market"
-        description="Everything required to move, price and settle pre-owned inventory — with the audit trail to prove it."
-      />
+      <div className="grid gap-12 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-20">
+        <div className="lg:sticky lg:top-28 lg:self-start">
+          <SectionHeading
+            eyebrow="Under the bonnet"
+            title="Six things we've had to get right"
+            description="None of this is visible while everything is working. It is most of what makes a marketplace safe to hand your money through."
+          />
+          <Button asChild variant="outline" className="mt-8 h-11 rounded-xl px-5">
+            <Link to="/how-it-works">
+              Read the full process
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
 
-      <div className="mt-12 grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
-        {features.map((feature, index) => (
-          <Reveal key={feature.title} delay={index * 60}>
-            <Card variant="bare" className="h-full transition-colors hover:bg-secondary/40">
-              <CardContent className="p-6">
-                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
-                  <feature.icon className="h-5 w-5" />
-                </div>
-                <h3 className="mt-5 text-card-title font-semibold text-foreground">{feature.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{feature.body}</p>
-                <p className="eyebrow-muted mt-4 border-t border-border pt-3">
-                  {feature.meta}
-                </p>
-              </CardContent>
-            </Card>
-          </Reveal>
-        ))}
+        <ol className="grid gap-x-12 lg:grid-cols-2">
+          {features.map((feature, index) => (
+            <Reveal as="li" key={feature.title} delay={index * 60} className="border-t border-border py-7">
+              <span className="block text-sm font-medium tabular-nums text-muted-foreground">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <h3 className="display mt-3 text-xl font-semibold leading-snug text-foreground sm:text-2xl">
+                {feature.title}
+              </h3>
+              <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">{feature.body}</p>
+            </Reveal>
+          ))}
+        </ol>
       </div>
     </div>
   </section>

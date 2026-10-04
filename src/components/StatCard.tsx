@@ -13,16 +13,14 @@ interface StatCardProps {
 }
 
 export const StatCard = ({ label, value, unit, hint, icon: Icon, trend, className }: StatCardProps) => (
-  <Card className={cn("p-5", className)}>
+  <Card className={cn("rounded-xl p-5", className)}>
     <div className="flex items-start justify-between gap-3">
       <p className="eyebrow-muted">{label}</p>
-      {Icon && (
-        <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-secondary text-primary">
-          <Icon className="h-4 w-4" />
-        </span>
-      )}
+      {/* No tinted rounded square behind the icon: a row of those is the
+          default generated-dashboard stat tile. The glyph sits on its own. */}
+      {Icon && <Icon className="h-4 w-4 shrink-0 text-muted-foreground/70" aria-hidden="true" />}
     </div>
-    <div className="mt-4 flex items-baseline gap-1.5">
+    <div className="mt-3 flex items-baseline gap-1.5">
       <span className="text-3xl font-semibold tabular-nums tracking-tight text-foreground">{value}</span>
       {unit && <span className="text-sm font-medium text-muted-foreground">{unit}</span>}
     </div>

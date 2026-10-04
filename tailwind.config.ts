@@ -14,19 +14,17 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: [
-          "Inter",
-          "ui-sans-serif",
-          "system-ui",
-          "-apple-system",
-          "Segoe UI",
-          "Roboto",
-          "Helvetica Neue",
-          "Arial",
-          "sans-serif",
-        ],
-        display: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
-        mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Consolas", "monospace"],
+        // Both read the CSS custom properties declared in index.css, so the
+        // font stack exists in exactly one place.
+        //
+        // Instrument Sans is a geometric grotesque with enough oddness in the
+        // terminals to not read as a default UI font. Fraunces is a variable
+        // old-style with optical sizing, and is the single biggest reason this
+        // stops looking like a template: no generated layout ships a serif
+        // display face.
+        sans: ["var(--font-sans)"],
+        display: ["var(--font-display)"],
+        mono: ["var(--font-mono)"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -38,8 +36,6 @@ export default {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
           hover: "hsl(var(--primary-hover))",
-          light: "hsl(var(--eco-primary-light))",
-          dark: "hsl(var(--eco-primary-dark))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -85,12 +81,6 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        eco: {
-          primary: "hsl(var(--eco-primary))",
-          secondary: "hsl(var(--eco-secondary))",
-          earth: "hsl(var(--eco-earth))",
-          success: "hsl(var(--eco-success))",
-        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -106,16 +96,33 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 1px)",
         sm: "calc(var(--radius) - 2px)",
+        // Controls, inputs and small surfaces stay tight. Photography and cards
+        // get the larger radii — the size difference between the two is what
+        // gives the page a sense of scale.
+        xl: "var(--radius-xl)",
+        "2xl": "var(--radius-2xl)",
+        "3xl": "var(--radius-3xl)",
       },
       fontSize: {
         "card-title": ["0.9375rem", { lineHeight: "1.375" }],
         lede: ["1.0625rem", { lineHeight: "1.625" }],
-        "section-title": ["2rem", { lineHeight: "1.2", letterSpacing: "-0.02em" }],
+        "section-title": ["2rem", { lineHeight: "1.15", letterSpacing: "-0.02em" }],
+        // Display scale. Used only with `font-display`; the leading is set tight
+        // enough that a two-line headline still reads as one block.
+        "display-sm": ["1.625rem", { lineHeight: "1.18", letterSpacing: "-0.018em" }],
+        display: ["2.125rem", { lineHeight: "1.1", letterSpacing: "-0.024em" }],
+        "display-lg": ["2.75rem", { lineHeight: "1.04", letterSpacing: "-0.028em" }],
+        "display-xl": ["3.5rem", { lineHeight: "0.99", letterSpacing: "-0.032em" }],
+        "display-2xl": ["4.5rem", { lineHeight: "0.94", letterSpacing: "-0.035em" }],
       },
       zIndex: {
         header: "50",
         "skip-link": "60",
         overlay: "50",
+        // Mobile tab bar. Below `header` so the sticky header keeps priority
+        // when the two overlap on a short landscape viewport, and well below
+        // `toast` so a confirmation is never hidden behind it.
+        "bottom-nav": "45",
         toast: "100",
       },
       boxShadow: {
@@ -127,6 +134,14 @@ export default {
       },
       letterSpacing: {
         tightest: "-0.035em",
+        // Eyebrows were tracked +0.16em, which is shouting. A section label is
+        // a whisper; the wider tracking was part of the generated look.
+        eyebrow: "0.1em",
+      },
+      padding: {
+        // Clears the fixed mobile tab bar (h-14) plus the device safe area, so
+        // the bar can never sit on top of the footer's last row.
+        nav: "calc(env(safe-area-inset-bottom) + 4.25rem)",
       },
       keyframes: {
         "accordion-down": {

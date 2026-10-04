@@ -71,6 +71,7 @@ const sortOptions = [
 ];
 
 type ViewMode = "grid" | "table";
+type SortValue = (typeof sortOptions)[number]["value"];
 
 const Marketplace = () => {
   const navigate = useNavigate();
@@ -79,13 +80,19 @@ const Marketplace = () => {
 
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
-  // The query and the category live in the URL, not in component state. Search
-  // used to reset on every refresh and could not be shared or linked, which made
-  // a filtered result set impossible to send to someone else or bookmark.
+  // The query, category and sort all live in the URL, not in component state.
+  // Search used to reset on every refresh and could not be shared or linked,
+  // which made a filtered result set impossible to send to someone else or
+  // bookmark. `sort` joined them so the homepage's product rails can deep-link
+  // to a pre-sorted marketplace ("see all the best value") and have it stick.
   const searchQuery = searchParams.get("q") ?? "";
   const categoryFilter = searchParams.get("category") ?? "all";
-  const [conditionFilter, setConditionFilter] = useState("all");
-  const [sort, setSort] = useState("newest");
+  const conditionFilter = searchParams.get("condition") ?? "all";
+  const sortParam = searchParams.get("sort") ?? "newest";
+
+  // Guard against a hand-edited or stale `?sort=`, which would otherwise fall
+  // through the switch below and silently sort by date.
+  const sort = (sortOptions.some((option) => option.value === sortParam) ? sortParam : "newest") as SortValue;
   const [view, setView] = useState<ViewMode>("grid");
   const [savedOnly, setSavedOnly] = useState(false);
   const { ids: savedIds, count: savedCount } = useWishlist();
@@ -118,10 +125,15 @@ const Marketplace = () => {
   /**
    * Writes a filter to the URL, replacing rather than pushing so typing in the
    * search box does not fill the history with one entry per keystroke.
+   *
+   * `condition` and `sort` are here too so the homepage's product rails can link
+   * to a pre-filtered marketplace and have it survive a refresh or a share.
+   * `q` is deliberately NOT prefixed: the marketplace list is already filtered
+   * client-side, so a second server round trip per keystroke would be wasted.
    */
-  const updateFilter = (key: "q" | "category", value: string) => {
+  const updateFilter = (key: "q" | "category" | "condition" | "sort", value: string) => {
     const next = new URLSearchParams(searchParams);
-    if (value) {
+    if (value && value !== "all" && !(key === "sort" && value === "newest")) {
       next.set(key, value);
     } else {
       next.delete(key);
@@ -131,6 +143,14 @@ const Marketplace = () => {
 
   const handleCategoryChange = (value: string) => {
     updateFilter("category", value === "all" ? "" : value);
+  };
+
+  const handleConditionChange = (value: string) => {
+    updateFilter("condition", value === "all" ? "" : value);
+  };
+
+  const handleSortChange = (value: string) => {
+    updateFilter("sort", value);
   };
 
   const filteredListings = useMemo(() => {
@@ -165,7 +185,6 @@ const Marketplace = () => {
     categoryFilter !== "all" || conditionFilter !== "all" || searchQuery.trim() !== "" || savedOnly;
 
   const resetFilters = () => {
-    setConditionFilter("all");
     setSavedOnly(false);
     setSearchParams({}, { replace: true });
   };
@@ -174,8 +193,8 @@ const Marketplace = () => {
     <AppLayout contained={false}>
       <PageHeader
         eyebrow="Marketplace"
-        title="Live inventory"
-        description="Every listing is escrowed on settlement, verified for condition and reported for environmental impact."
+        title="What's on the shelves"
+        description="Everything currently listed, newest first. Filter it down if you want, or just scroll and see what turns up."
         breadcrumbs={[{ label: "Home", to: "/" }, { label: "Marketplace" }]}
         actions={
           <Button asChild>
@@ -211,9 +230,12 @@ const Marketplace = () => {
 
       <div className="container py-8 md:py-10">
         <Card className="mb-8 p-4">
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-end">
-            <div className="space-y-2">
-              <Label htmlFor="marketplace-search">Search inventory</Label>
+          {/* Category and Condition sit side by side from the smallest screen.
+              Stacked, they pushed the result grid a full screen down a phone for
+              two dropdowns. */}
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-end lg:gap-4">
+            <div className="col-span-2 space-y-2">
+              <Label htmlFor="marketplace-search">Search</Label>
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -227,7 +249,9 @@ const Marketplace = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="category-filter">Category</Label>
+              <Label htmlFor="category-filter" className="text-xs sm:text-sm">
+                Category
+              </Label>
               <Select value={categoryFilter} onValueChange={handleCategoryChange}>
                 <SelectTrigger id="category-filter" className="w-full lg:w-[200px]">
                   <SelectValue />
@@ -243,8 +267,10 @@ const Marketplace = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="condition-filter">Condition</Label>
-              <Select value={conditionFilter} onValueChange={setConditionFilter}>
+              <Label htmlFor="condition-filter" className="text-xs sm:text-sm">
+                Condition
+              </Label>
+              <Select value={conditionFilter} onValueChange={handleConditionChange}>
                 <SelectTrigger id="condition-filter" className="w-full lg:w-[170px]">
                   <SelectValue />
                 </SelectTrigger>
@@ -265,7 +291,7 @@ const Marketplace = () => {
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <SlidersHorizontal className="h-4 w-4" />
               <span>Sorted by</span>
-              <Select value={sort} onValueChange={setSort}>
+              <Select value={sort} onValueChange={handleSortChange}>
                 <SelectTrigger className="h-8 w-[190px] border-0 bg-transparent px-0 text-sm font-medium text-foreground shadow-none hover:border-0">
                   <SelectValue />
                 </SelectTrigger>
@@ -358,27 +384,27 @@ const Marketplace = () => {
             icon={savedOnly && savedCount > 0 ? Heart : PackageSearch}
             title={
               savedOnly && savedCount > 0
-                ? "No saved items match these filters"
+                ? "Your saved items are hiding"
                 : filtersActive
-                  ? "No inventory matches these filters"
-                  : "No active listings yet"
+                  ? "Nothing matches that"
+                  : "The shelves are bare"
             }
             description={
               savedOnly && savedCount > 0
-                ? "Your saved items are hidden by the current search or category filter."
+                ? "You have saved things, but not any that fit the filters you've got on. Loosen something."
                 : filtersActive
-                  ? "Adjust or clear your filters to see the full catalogue."
-                  : "Be the first to publish an item and start earning EcoCoins."
+                  ? "No listings fit that combination of search, category and condition. Try fewer words, or clear the lot."
+                  : "Nobody has listed anything yet. Which means the very first thing on here could be yours."
             }
             action={
               filtersActive ? (
                 <Button variant="outline" onClick={resetFilters}>
-                  Clear filters
+                  Clear the filters
                 </Button>
               ) : (
                 <Button onClick={() => navigate("/create-listing")}>
                   <Plus className="h-4 w-4" />
-                  Create the first listing
+                  List the first thing
                 </Button>
               )
             }

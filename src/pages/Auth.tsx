@@ -21,9 +21,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { readNextPath } from "@/lib/authRedirect";
 
 const assurancePoints = [
-  "Escrow-protected settlement on every order",
-  "Identity verification and role-based permissions",
-  "Full transaction history retained for audit",
+  "Your EcoCoins are held until the buyer confirms delivery",
+  "ID checks before your first payout goes anywhere",
+  "Every movement kept on a ledger you can read back",
 ];
 
 const GoogleIcon = () => (
@@ -67,28 +67,28 @@ const AssurancePanel = ({ className, asHeading = false }: { className?: string; 
   return (
     <div className={className}>
       <p className="eyebrow">Account access</p>
-      <Title className="mt-3 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
-        One account for buying, selling and settlement
+      <Title className="display mt-3 text-2xl font-semibold text-foreground md:text-3xl">
+        One account, both sides of the trade
       </Title>
-      <p className="mt-4 max-w-md text-lede leading-relaxed text-muted-foreground">
-        Register once to publish listings, hold EcoCoins in your wallet and manage orders across the circular
-        marketplace.
+      <p className="mt-4 max-w-md text-base leading-relaxed text-muted-foreground sm:text-lede">
+        Register once to sell things, buy things, and keep your balance in one wallet. You only need the second
+        half if you never sell.
       </p>
 
       <ul className="mt-8 space-y-3">
         {assurancePoints.map((point) => (
           <li key={point} className="flex items-start gap-3 text-sm text-muted-foreground">
-            <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
             {point}
           </li>
         ))}
       </ul>
 
-      <div className="mt-10 hidden items-center gap-3 rounded-lg border border-border bg-secondary/40 p-4 lg:flex">
-        <ShieldCheck className="h-5 w-5 shrink-0 text-primary" />
+      <div className="mt-10 hidden items-start gap-3 rounded-xl border border-border bg-secondary/40 p-4 lg:flex">
+        <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
         <p className="text-xs leading-relaxed text-muted-foreground">
-          Accounts are free. No listing fees, no monthly subscription. You are only charged a transaction fee on
-          completed sales.
+          Free to join, free to list, no subscription. We only take a cut when something sells — so there is no
+          financial reason on either side for us to rush you.
         </p>
       </div>
     </div>
@@ -251,12 +251,12 @@ const Auth = () => {
                 <CardContent>
                   <form onSubmit={handleSignIn} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="signin-email">Work email</Label>
+                      <Label htmlFor="signin-email">Email address</Label>
                       <Input
                         id="signin-email"
                         type="email"
                         autoComplete="email"
-                        placeholder="you@company.com"
+                        placeholder="you@example.com"
                         value={signInEmail}
                         onChange={(event) => setSignInEmail(event.target.value)}
                         required
@@ -320,12 +320,12 @@ const Auth = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="signup-email">Work email</Label>
+                      <Label htmlFor="signup-email">Email address</Label>
                       <Input
                         id="signup-email"
                         type="email"
                         autoComplete="email"
-                        placeholder="you@company.com"
+                        placeholder="you@example.com"
                         value={signUpEmail}
                         onChange={(event) => setSignUpEmail(event.target.value)}
                         required
@@ -419,12 +419,12 @@ const Auth = () => {
           ) : (
             <form onSubmit={handleReset} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="reset-email">Work email</Label>
+                <Label htmlFor="reset-email">Email address</Label>
                 <Input
                   id="reset-email"
                   type="email"
                   autoComplete="email"
-                  placeholder="you@company.com"
+                  placeholder="you@example.com"
                   value={resetEmail}
                   onChange={(event) => setResetEmail(event.target.value)}
                   aria-invalid={resetError ? true : undefined}

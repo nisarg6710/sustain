@@ -96,17 +96,17 @@ const HeaderSearch = ({ className, onNavigate }: { className?: string; onNavigat
   return (
     <form role="search" onSubmit={handleSubmit} className={cn("relative", className)}>
       <label htmlFor="header-search" className="sr-only">
-        Search inventory
+        Search the marketplace
       </label>
-      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
       <Input
         id="header-search"
         ref={inputRef}
         type="search"
         value={query}
         onChange={(event) => setQuery(event.target.value)}
-        placeholder="Search inventory"
-        className="h-9 pl-9"
+        placeholder="Search the marketplace"
+        className="h-9 rounded-lg pl-9"
       />
     </form>
   );
@@ -129,19 +129,19 @@ export const Navigation = () => {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="hidden border-b border-border/70 bg-secondary/40 lg:block">
+      <div className="hidden border-b border-border/70 lg:block">
         <div className="container flex h-9 items-center justify-between text-xs text-muted-foreground">
-          <p className="font-medium">A trusted marketplace for pre-loved goods</p>
+          <p>Pre-loved goods, properly graded and properly paid for.</p>
           <div className="flex items-center gap-6">
             <span className="inline-flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden="true" />
-              Marketplace live
+              Open for business
             </span>
             <a href="mailto:support@sustain.eco" className="transition-colors hover:text-foreground">
               support@sustain.eco
             </a>
             <Link to="/faq" className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground">
-              <LifeBuoy className="h-3.5 w-3.5" />
+              <LifeBuoy className="h-3.5 w-3.5" aria-hidden="true" />
               Help centre
             </Link>
           </div>
@@ -222,7 +222,7 @@ export const Navigation = () => {
               <Button asChild className="hidden md:inline-flex">
                 <Link to="/create-listing">
                   <Plus className="h-4 w-4" />
-                  List an item
+                  Sell something
                 </Link>
               </Button>
             </>
@@ -234,7 +234,7 @@ export const Navigation = () => {
               <Button asChild className="hidden sm:inline-flex">
                 <Link to="/create-listing">
                   <Plus className="h-4 w-4" />
-                  List an item
+                  Sell something
                 </Link>
               </Button>
             </>
@@ -284,7 +284,7 @@ export const Navigation = () => {
                         label="Affiliate reporting"
                       />
                     )}
-                    <MobileLink to="/create-listing" onNavigate={closeMenu} icon={Package} label="List an item" />
+                    <MobileLink to="/create-listing" onNavigate={closeMenu} icon={Package} label="Sell something" />
                     <button
                       onClick={handleSignOut}
                       className="flex items-center gap-3 rounded-md px-3 py-3 text-left text-sm font-medium text-destructive"
@@ -303,7 +303,7 @@ export const Navigation = () => {
                     <Button asChild className="w-full">
                       <Link to="/create-listing" onClick={closeMenu}>
                         <Plus className="h-4 w-4" />
-                        List an item
+                        Sell something
                       </Link>
                     </Button>
                     <p className="text-xs text-muted-foreground">

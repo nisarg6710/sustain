@@ -7,27 +7,36 @@ export type Theme = "light" | "dark" | "amoled";
 export const THEME_STORAGE_KEY = "sustain-theme";
 
 export const THEME_OPTIONS: { value: Theme; label: string; description: string; icon: LucideIcon }[] = [
-  { value: "light", label: "Light", description: "Default workspace", icon: Sun },
-  { value: "dark", label: "Dark", description: "Reduced glare", icon: Moon },
+  { value: "dark", label: "Dark", description: "The default", icon: Moon },
+  { value: "light", label: "Light", description: "Daylight", icon: Sun },
   { value: "amoled", label: "AMOLED", description: "True black", icon: Contrast },
 ];
 
 export const THEME_COLORS: Record<Theme, string> = {
-  light: "#f7faf8",
-  dark: "#0c1a16",
+  dark: "#0a0f0d",
+  light: "#fafbf9",
   amoled: "#000000",
 };
 
 const isTheme = (value: unknown): value is Theme =>
   value === "light" || value === "dark" || value === "amoled";
 
+/**
+ * Dark unless the visitor has said otherwise.
+ *
+ * This used to follow `prefers-color-scheme`, which meant a first-time visitor
+ * on a light-mode laptop got the light theme — and the product is designed in
+ * dark. The OS preference is only consulted once a choice has been stored, and
+ * after that the app stops following it (follow-up 4: the choice is still not
+ * synced across tabs).
+ */
 const getInitialTheme = (): Theme => {
-  if (typeof window === "undefined") return "light";
+  if (typeof window === "undefined") return "dark";
 
   const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
   if (isTheme(stored)) return stored;
 
-  return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  return "dark";
 };
 
 /**
@@ -62,24 +71,17 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     window.localStorage.setItem(THEME_STORAGE_KEY, theme);
   }, [theme]);
 
-  useEffect(() => {
-    const media = window.matchMedia?.("(prefers-color-scheme: dark)");
-    if (!media) return;
-
-    const handleChange = (event: MediaQueryListEvent) => {
-      if (window.localStorage.getItem(THEME_STORAGE_KEY)) return;
-      setThemeState(event.matches ? "dark" : "light");
-    };
-
-    media.addEventListener("change", handleChange);
-    return () => media.removeEventListener("change", handleChange);
-  }, []);
+  // No `prefers-color-scheme` listener any more. There used to be one, and it
+  // had become dead the moment the default stopped following the OS: the effect
+  // above writes a stored value on mount, so the listener's "only if the user
+  // has never chosen" guard was always true. Leaving it in would have suggested
+  // the app still tracked the system setting.
 
   const setTheme = useCallback((next: Theme) => setThemeState(next), []);
 
   const cycleTheme = useCallback(() => {
     setThemeState((current) => {
-      const order: Theme[] = ["light", "dark", "amoled"];
+      const order: Theme[] = ["dark", "light", "amoled"];
       return order[(order.indexOf(current) + 1) % order.length];
     });
   }, []);
