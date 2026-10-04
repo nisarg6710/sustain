@@ -42,14 +42,63 @@ const RouteFallback = () => (
  * Client-side routing keeps the previous scroll offset, so navigating from a
  * scrolled marketplace drops the user mid-page with focus still on the old
  * link. Reset scroll and move focus to the main landmark on every navigation.
+ *
+ * The hash case is the exception, and it used to be broken. Every route is
+ * lazily loaded, so a link like `/faq#selling` fires this effect while the help
+ * centre chunk is still downloading: `scrollTo(0)` runs, the browser's own anchor
+ * scroll finds nothing to aim at, and the visitor is left at the top of the page
+ * they asked to land halfway down. Retrying across a few frames covers the gap —
+ * the target exists as soon as the chunk resolves, which is well inside the
+ * budget below.
+ *
+ * `scroll-mt-28` on the target then offsets the sticky header, so no arithmetic
+ * is needed here. A hash that never resolves falls back to the top of the page
+ * rather than silently doing nothing.
  */
+const SCROLL_FRAME_BUDGET = 30;
+
+/**
+ * `index.css` neutralises animation and transition under `prefers-reduced-motion`,
+ * but it cannot neutralise `scrollIntoView({ behavior: "smooth" })` — an explicit
+ * argument to a JavaScript API is not something `scroll-behavior: auto` in a
+ * stylesheet can override. The anchor jump has to check the media query itself or
+ * it becomes the one animated movement left on the site.
+ */
+const prefersReducedMotion = () =>
+  typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 const ScrollToTop = () => {
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
 
   useEffect(() => {
+    if (hash) {
+      let frame = 0;
+      let attempts = 0;
+      const behavior: ScrollBehavior = prefersReducedMotion() ? "auto" : "smooth";
+
+      const scrollToHash = () => {
+        const target = document.getElementById(decodeURIComponent(hash.slice(1)));
+
+        if (target) {
+          target.scrollIntoView({ behavior, block: "start" });
+          return;
+        }
+
+        if (attempts++ < SCROLL_FRAME_BUDGET) {
+          frame = requestAnimationFrame(scrollToHash);
+        } else {
+          window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+        }
+      };
+
+      scrollToHash();
+
+      return () => cancelAnimationFrame(frame);
+    }
+
     window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
     document.getElementById("main-content")?.focus({ preventScroll: true });
-  }, [pathname]);
+  }, [pathname, hash]);
 
   return null;
 };

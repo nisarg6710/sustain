@@ -1,67 +1,173 @@
 import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Search, ShieldCheck } from "lucide-react";
+import { ArrowRight, ClipboardCheck, Scale, Search, Star } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { WishlistButton, type ListingSummary } from "@/components/ListingCard";
 import { useActiveListingCount, useActiveListings } from "@/hooks/useActiveListings";
-import { formatCoins } from "@/lib/format";
+import { conditionVariant, formatCoins, formatCondition } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-const assurances = [
-  "Your EcoCoins sit with us, not the seller, until you confirm it arrived.",
-  "Every listing carries a condition grade and a place to declare the dents.",
-  "Open a dispute and the payout freezes while we look into it.",
+/**
+ * MERCHANDISING PLACEHOLDERS — none of this is real. Off by default.
+ *
+ * The `listings` table has no rating column, no original price and no view
+ * tracking, so every number below is invented, and it would be sitting on top of
+ * real merchandise: a specific Garmin watch with a specific condition grade.
+ * Set the flag to `true` to see the layout a stocked marketplace would use, then
+ * wire these three fields to real columns or delete the block.
+ *
+ * Note what this repo decided before: a fabricated "4.8 from 2,400+ reviews"
+ * badge was removed from the testimonials section for exactly this reason, and
+ * `changes.md` follow-up 2 flags the placeholder reviews on that page as needing
+ * consented replacements before launch.
+ */
+const SHOWCASE_PLACEHOLDERS = false;
+
+const PLACEHOLDER_SIGNALS = {
+  /** Five stars, four filled. */
+  stars: [true, true, true, true, false],
+  rating: "4.2",
+  reviewCount: "128",
+  /** Struck through beside the live price. Higher than the real price. */
+  wasPrice: 950,
+  viewing: 12,
+};
+
+/**
+ * The two things this hero does not already say somewhere else.
+ *
+ * Everything else reassurance-shaped is covered: the escrow line is in the lede
+ * directly opposite this column, "Free to join / No listing fees / Buyer
+ * protection" is the row under the buttons, and `TrustBar` carries four more
+ * directly below the fold. What nobody had said was the pair of promises that
+ * actually make a pre-loved purchase feel safe — that the condition is written
+ * down, and that a dispute stops the money moving. Hence two, not five.
+ */
+const mechanisms = [
+  { icon: ClipboardCheck, label: "Condition graded in writing, dents and all" },
+  { icon: Scale, label: "Open a dispute and the payout freezes while we look" },
 ];
 
-/** Grid geometry for the desktop mosaic: one tall tile, two stacked beside it. */
-const tileSpans = [
-  "col-span-2 row-span-2",
-  "col-span-1 row-span-1",
-  "col-span-1 row-span-1",
-];
+/**
+ * Grid geometry for the mosaic. The lead tile takes a 2×2 block; the rest
+ * auto-place into the single cells around it.
+ *
+ * Below `lg` there are only three columns and no explicit rows, so a fourth tile
+ * would wrap under an already-uneven composition. Tiles four and five are
+ * therefore hidden until the 4×2 grid takes over at `sm`.
+ */
+const tilesOnNarrow = 3;
 
 const MosaicTile = ({
-  to,
-  title,
-  price,
-  image,
+  listing,
+  featured = false,
   className,
 }: {
-  to: string;
-  title: string;
-  price: string;
-  image?: string | null;
+  listing: ListingSummary;
+  /** The lead tile: taller, and the only one carrying placeholder signals. */
+  featured?: boolean;
   className?: string;
 }) => (
-  <Link
-    to={to}
+  /*
+    The wrapper is a sibling of the link, not its parent. `WishlistButton` is a
+    real <button>, and a button inside an anchor is invalid markup — it also
+    makes the heart unreachable by keyboard without the browser guessing. So the
+    link fills the tile absolutely and the two controls sit above it.
+
+    `overflow-hidden` would clip a focus ring drawn outside the box, so the ring
+    is drawn inside via focus-within, the same way `ListingCard` does it.
+  */
+  <div
     className={cn(
-      "group relative overflow-hidden rounded-xl bg-secondary ring-1 ring-inset ring-border transition-all hover:ring-primary/40",
+      "group relative overflow-hidden rounded-xl bg-secondary ring-1 ring-inset ring-border transition-all hover:ring-primary/40 focus-within:ring-2 focus-within:ring-ring focus-within:ring-inset",
       className,
     )}
   >
-    {image ? (
-      <img
-        src={image}
-        alt={title}
-        loading="eager"
-        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-      />
-    ) : (
-      <span className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
-        No photo yet
-      </span>
-    )}
+    <Link to={`/product/${listing.id}`} className="absolute inset-0 block focus-visible:outline-none">
+      {listing.photos?.[0] ? (
+        <img
+          src={listing.photos[0]}
+          alt={listing.title}
+          loading="eager"
+          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+      ) : (
+        <span className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
+          No photo yet
+        </span>
+      )}
 
-    <span
-      className="absolute inset-x-0 bottom-0 flex flex-col gap-0.5 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-3 pb-3 pt-10 text-white"
-      aria-hidden="true"
-    >
-      <span className="line-clamp-1 text-sm font-semibold leading-tight">{title}</span>
-      <span className="text-xs text-white/70">{price}</span>
+      {/*
+        Price leads, title supports. It was the other way round — a 14px title
+        over a 12px price — which made the tiles read as a photo gallery rather
+        than as merchandise. A buyer scans for the number, not the caption.
+
+        The block stays `aria-hidden` because the link's accessible name is the
+        image alt above; announcing the same title twice is worse than silence.
+      */}
+      <span
+        className="absolute inset-x-0 bottom-0 flex flex-col gap-1 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-3 pb-3 pt-10 text-white"
+        aria-hidden="true"
+      >
+        <span className="line-clamp-1 text-xs text-white/75">{listing.title}</span>
+
+        {SHOWCASE_PLACEHOLDERS && featured && (
+          <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-white/70">
+            <span className="inline-flex items-center gap-1">
+              <span className="inline-flex gap-px text-accent">
+                {PLACEHOLDER_SIGNALS.stars.map((filled, index) => (
+                  <Star
+                    key={index}
+                    className={cn("h-3 w-3", filled ? "fill-current" : "text-white/35")}
+                  />
+                ))}
+              </span>
+              <span className="tabular-nums">{PLACEHOLDER_SIGNALS.rating}</span>
+              <span className="tabular-nums text-white/45">
+                ({PLACEHOLDER_SIGNALS.reviewCount})
+              </span>
+            </span>
+            <span className="text-white/30" aria-hidden="true">
+              ·
+            </span>
+            <span className="tabular-nums">{PLACEHOLDER_SIGNALS.viewing} viewing</span>
+          </span>
+        )}
+
+        <span className="flex items-baseline gap-2">
+          <span className="text-sm font-semibold tabular-nums">
+            {formatCoins(listing.price_ecocoins)}
+          </span>
+          {SHOWCASE_PLACEHOLDERS && featured && (
+            <span className="text-xs tabular-nums text-white/50 line-through">
+              {formatCoins(PLACEHOLDER_SIGNALS.wasPrice)}
+            </span>
+          )}
+        </span>
+      </span>
+    </Link>
+
+    {/*
+      On an opaque `bg-card/90` rather than directly on the photo. The badge
+      variants are translucent by design — `bg-success/10`, `bg-info/10` — which
+      is correct over a page background and unreadable over a photograph.
+    */}
+    <span className="absolute left-2 top-2 z-10 rounded bg-card/85 backdrop-blur">
+      <Badge variant={conditionVariant[listing.condition] ?? "secondary"}>
+        {formatCondition(listing.condition)}
+      </Badge>
     </span>
-  </Link>
+
+    <WishlistButton
+      id={listing.id}
+      title={listing.title}
+      className="absolute right-2 top-2 z-10 h-8 w-8 rounded-lg"
+    />
+  </div>
 );
 
 export const Hero = () => {
@@ -77,10 +183,16 @@ export const Hero = () => {
   };
 
   // The mosaic shows real stock, preferring tiles that actually have a photo —
-  // a grid of three grey placeholders is worse than no mosaic at all. Falls back
-  // to the first three listings regardless once stock exists.
+  // a grid of grey placeholders is worse than no mosaic at all. Falls back to the
+  // first listings regardless once stock exists.
+  //
+  // Five, because the `sm` grid is four columns by two rows with the lead tile
+  // holding a 2×2 block: the remaining four cells need four tiles, and before
+  // this there were two of them sitting empty next to a short column.
   const withPhotos = listings.filter((listing) => listing.photos?.[0]);
-  const mosaic = (withPhotos.length >= 3 ? withPhotos : listings).slice(0, 3);
+  const source = withPhotos.length >= 3 ? withPhotos : listings;
+  const wide = source.slice(0, 5);
+  const narrow = wide.slice(0, tilesOnNarrow);
 
   return (
     <section className="relative overflow-hidden border-b border-border">
@@ -164,24 +276,36 @@ export const Hero = () => {
             </ul>
           </div>
 
-          {/* The mosaic is real merchandise, not decoration: three live listings,
-              each linking to that product. Compact on a phone — a single row of
-              three — and the full composition from `sm`. */}
+          {/* The mosaic is real merchandise, not decoration: every tile is a live
+              listing that links to that product, grades itself and can be saved.
+              Compact on a phone — three tiles — and the full composition from `sm`. */}
           <div className="animate-fade-up lg:col-span-5">
-            {mosaic.length > 0 ? (
+            {wide.length > 0 ? (
               <div className="relative">
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:grid-rows-2 sm:gap-2.5">
-                  {mosaic.map((listing, index) => (
+                {/* Two compositions, one source list. Five tiles would wrap raggedly
+                    in three unsized columns, so the narrow layout renders its own
+                    three rather than hiding two of them with `hidden sm:block` and
+                    leaving them in the accessibility tree at every breakpoint. */}
+                <div className="grid grid-cols-3 gap-2 sm:hidden">
+                  {narrow.map((listing, index) => (
                     <MosaicTile
                       key={listing.id}
-                      to={`/product/${listing.id}`}
-                      title={listing.title}
-                      price={formatCoins(listing.price_ecocoins)}
-                      image={listing.photos?.[0]}
+                      listing={listing}
+                      featured={index === 0}
+                      className={cn("aspect-[4/5]", index === 0 && "col-span-2 row-span-2")}
+                    />
+                  ))}
+                </div>
+
+                <div className="hidden grid-cols-4 grid-rows-2 gap-2.5 sm:grid">
+                  {wide.map((listing, index) => (
+                    <MosaicTile
+                      key={listing.id}
+                      listing={listing}
+                      featured={index === 0}
                       className={cn(
-                        "aspect-[4/5] sm:aspect-auto sm:h-full sm:min-h-[380px]",
-                        index === 0 && tileSpans[0],
-                        index > 0 && "sm:min-h-0",
+                        "aspect-[4/5] sm:aspect-auto sm:h-full",
+                        index === 0 ? "col-span-2 row-span-2 sm:min-h-[380px]" : "sm:min-h-0",
                       )}
                     />
                   ))}
@@ -202,8 +326,31 @@ export const Hero = () => {
                         {liveCount === 1 ? "item" : "items"}
                       </span>
                     </p>
+
+                    {/* The scarcity that is actually true here. Every listing is one
+                        physical object, so "one of each" is a fact about the
+                        inventory rather than a countdown timer. */}
+                    <Separator className="my-3" />
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      One of each. Nothing here is the same thing twice.
+                    </p>
                   </div>
                 )}
+
+                {/* A caption for the imagery, not another row of pills. The
+                    equivalent line used to sit under the whole hero as a
+                    three-column list, which meant the same reassurance appeared
+                    twice within one screenful and mobile got none of it. */}
+                <div className="mt-5 border-t border-border pt-4">
+                  <ul className="flex flex-col gap-2.5 text-sm text-muted-foreground sm:flex-row sm:gap-6">
+                    {mechanisms.map(({ icon: Icon, label }) => (
+                      <li key={label} className="flex items-start gap-2.5">
+                        <Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                        <span className="leading-snug">{label}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             ) : (
               /* Zero stock: an invitation rather than a placeholder grid. */
@@ -222,20 +369,6 @@ export const Hero = () => {
             )}
           </div>
         </div>
-      </div>
-
-      {/* Desktop only. On a phone the reassurance list was six lines between the
-          headline and the merchandise; the trust strip below the grid makes the
-          same three points in one thin band. */}
-      <div className="container hidden pb-10 lg:block">
-        <ul className="grid gap-6 border-t border-border pt-8 lg:grid-cols-3">
-          {assurances.map((line) => (
-            <li key={line} className="flex gap-3 text-sm leading-relaxed text-muted-foreground">
-              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-              <span>{line}</span>
-            </li>
-          ))}
-        </ul>
       </div>
     </section>
   );
